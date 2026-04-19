@@ -38,7 +38,7 @@ module.exports = function(client) {
       embeds: [{
         title: '👕 Bienvenue sur StreetNova !',
         description:
-          `Bienvenue sur StreetNova, ${mention} ! 👕\n\n` +
+          `Bienvenue sur Street Nova, ${mention} ! 👕\n\n` +
           `Tu viens de rejoindre l'une des meilleures communautés streetwear de france ! 🔥\n` +
           `Explore, partage tes looks et trouve les pépites qui vont faire passer ton style au niveau supérieur. 👟✨`,
         color: 0x5865f2,
@@ -47,7 +47,7 @@ module.exports = function(client) {
           { name: "📅 Date d'arrivée", value: dateStr,                        inline: true },
           { name: '👥 Membres',        value: `#${member.guild.memberCount}`, inline: true },
         ],
-        footer: { text: 'StreetNova — Élève ton style. 🚀' },
+        footer: { text: 'Street Nova — Élève ton style. 🚀' },
         timestamp: now.toISOString(),
       }],
     };
