@@ -36,18 +36,18 @@ module.exports = function(client) {
 
     const payload = {
       embeds: [{
-        title: '🎉 Nouvelle Arrivant(e) !',
+        title: '👕 Bienvenue dans la famille StreetNova !',
         description:
-          `Bienvenue parmi nous, ${mention} ! 🎊\n\n` +
-          `La cloche a sonné et toute la communauté est là pour t'accueillir comme il se doit ! 🔔✨\n` +
-          `Installe-toi confortablement, car ici est ton endroit tant rêvé ! 🚀🔥`,
+          `Bienvenue sur StreetNova, ${mention} ! 👕\n\n` +
+          `Tu viens de rejoindre l'une des meilleures communautés streetwear de france ! 🔥\n` +
+          `Explore, partage tes looks et trouve les pépites qui vont faire passer ton style au niveau supérieur. 👟✨`,
         color: 0x5865f2,
         thumbnail: { url: avatarURL },
         fields: [
           { name: "📅 Date d'arrivée", value: dateStr,                        inline: true },
           { name: '👥 Membres',        value: `#${member.guild.memberCount}`, inline: true },
         ],
-        footer: { text: "Heureux de t'avoir parmi nous !" },
+        footer: { text: 'StreetNova — Élève ton style. 🚀' },
         timestamp: now.toISOString(),
       }],
     };
