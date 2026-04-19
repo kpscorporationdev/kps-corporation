@@ -5,13 +5,14 @@ const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMembers,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-    GatewayIntentBits.GuildMessageReactions,
   ],
 });
 
-require('./rayuna')(client);
+// Chargement des modules
+require('./bienvenue-rayuna')(client);
+require('./reglement-rayuna')(client);
+require('./autoroles-rayuna')(client);
+require('./bienvenue-streetnova')(client);
 
 client.once('ready', () => {
   console.log(`✅ Bot connecté en tant que ${client.user.tag}`);
