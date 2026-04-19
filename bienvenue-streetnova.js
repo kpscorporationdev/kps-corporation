@@ -36,7 +36,7 @@ module.exports = function(client) {
 
     const payload = {
       embeds: [{
-        title: '👕 Bienvenue dans la famille StreetNova !',
+        title: '👕 Bienvenue sur StreetNova !',
         description:
           `Bienvenue sur StreetNova, ${mention} ! 👕\n\n` +
           `Tu viens de rejoindre l'une des meilleures communautés streetwear de france ! 🔥\n` +
