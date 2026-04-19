@@ -9,9 +9,7 @@ const client = new Client({
 });
 
 // Chargement des modules
-require('./bienvenue-rayuna')(client);
-require('./reglement-rayuna')(client);
-require('./autoroles-rayuna')(client);
+require('./rayuna')(client);
 require('./bienvenue-streetnova')(client);
 
 client.once('ready', () => {
