@@ -14,7 +14,7 @@ const client = new Client({
 require('./rayuna')(client);
 require('./bienvenue-streetnova')(client);
 require('./reglement-streetnova')(client);
-require('./topia-fr')(client);
+require('./topia-fr');
 
 client.once('ready', () => {
   console.log(`✅ Bot connecté en tant que ${client.user.tag}`);
