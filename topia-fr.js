@@ -473,7 +473,7 @@ client.on('messageCreate', async function(message) {
   if (!message.guild || message.guild.id !== GUILD_ID) return;
 
   // ── !reglement ──
-  if (message.content === '!reglement') {
+  if (message.content === '!reglement-topia') {
     if (message.author.id !== message.guild.ownerId) {
       return message.reply({ content: '❌ Seul le propriétaire du serveur 👑 peut utiliser cette commande !' });
     }
@@ -516,7 +516,7 @@ client.on('messageCreate', async function(message) {
   }
 
   // ── !candidatures ──
-  if (message.content === '!candidatures') {
+  if (message.content === '!candidatures-topia') {
     if (message.author.id !== message.guild.ownerId) {
       return message.reply({ content: '❌ Seul le propriétaire du serveur 👑 peut utiliser cette commande !' });
     }
@@ -554,7 +554,7 @@ client.on('messageCreate', async function(message) {
   }
 
   // ── !ticketssupport ──
-  if (message.content === '!ticketssupport') {
+  if (message.content === '!ticketssupport-topia') {
     if (message.author.id !== message.guild.ownerId) {
       return message.reply({ content: '❌ Seul le propriétaire du serveur 👑 peut utiliser cette commande !' });
     }
@@ -590,7 +590,7 @@ client.on('messageCreate', async function(message) {
   }
 
   // ── !ticketsmod ──
-  if (message.content === '!ticketsmod') {
+  if (message.content === '!ticketsmod-topia') {
     if (message.author.id !== message.guild.ownerId) {
       return message.reply({ content: '❌ Seul le propriétaire du serveur 👑 peut utiliser cette commande !' });
     }
