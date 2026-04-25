@@ -11,7 +11,7 @@ const https = require('https');
 //   CONFIGURATION GLOBALE
 // ══════════════════════════════════════════
 const BOT_TOKEN             = process.env.BOT_TOKEN;
-const GUILD_ID              = process.env.GUILD_ID;
+const GUILD_ID              = '1432472817005236326';
 const ROLE_AUTO_ID          = process.env.ROLE_AUTO_ID;          // Rôle donné automatiquement à l'arrivée
 const WEBHOOK_TOPIA = process.env.WEBHOOK_TOPIA; // URL du webhook de bienvenue
 const ROLE_REGLEMENT_ID     = process.env.ROLE_REGLEMENT_ID;     // Rôle donné après acceptation du règlement
