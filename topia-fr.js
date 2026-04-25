@@ -482,14 +482,7 @@ client.on('messageCreate', async function(message) {
     const salon = message.guild.channels.cache.get('1491829028548640860');
     if (!salon) return message.reply({ content: '❌ Salon de version introuvable !' });
     await message.delete().catch(() => {});
-    await salon.send('# 🔧 Mise à Jour
-
- 
-La nouvelle version du serveur la V.' + version + ' a bien été actualisé !
-
-By KPS Production
-
-<@&1481277922508669008>');
+    await salon.send('# 🔧 Mise à Jour\n\n \nLa nouvelle version du serveur la V.' + version + ' a bien été actualisé !\n\nBy KPS Production\n\n<@&1481277922508669008>');
     return;
   }
 
