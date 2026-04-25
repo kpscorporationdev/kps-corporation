@@ -13,7 +13,7 @@ const https = require('https');
 const BOT_TOKEN             = process.env.BOT_TOKEN;
 const GUILD_ID              = process.env.GUILD_ID;
 const ROLE_AUTO_ID          = process.env.ROLE_AUTO_ID;          // Rôle donné automatiquement à l'arrivée
-const WEBHOOK_BIENVENUE_TOPIA = process.env.WEBHOOK_BIENVENUE_TOPIA; // URL du webhook de bienvenue
+const WEBHOOK_TOPIA = process.env.WEBHOOK_TOPIA; // URL du webhook de bienvenue
 const ROLE_REGLEMENT_ID     = process.env.ROLE_REGLEMENT_ID;     // Rôle donné après acceptation du règlement
 const SALON_REGLEMENT       = process.env.SALON_REGLEMENT;       // Salon où poster l'embed règlement (via !reglement)
 const SALON_CANDID_EMBED    = process.env.SALON_CANDID_EMBED;    // Salon où poster l'embed candidatures
@@ -447,7 +447,7 @@ client.on('guildMemberAdd', async function(member) {
   };
 
   const body = JSON.stringify(payload);
-  const url  = new URL(WEBHOOK_BIENVENUE_TOPIA);
+  const url  = new URL(WEBHOOK_TOPIA);
   const req  = https.request({
     hostname: url.hostname,
     path:     url.pathname,
