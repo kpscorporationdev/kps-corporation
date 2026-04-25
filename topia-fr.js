@@ -472,6 +472,27 @@ client.on('messageCreate', async function(message) {
   if (message.author.bot) return;
   if (!message.guild || message.guild.id !== GUILD_ID) return;
 
+  // ── !version x.x.x ──
+  if (message.content.startsWith('!version ')) {
+    if (message.author.id !== message.guild.ownerId) {
+      return message.reply({ content: '❌ Seul le propriétaire du serveur 👑 peut utiliser cette commande !' });
+    }
+    const version = message.content.slice('!version '.length).trim();
+    if (!version) return message.reply({ content: '❌ Précise un numéro de version ! Ex: `!version 0.0.1`' });
+    const salon = message.guild.channels.cache.get('1491829028548640860');
+    if (!salon) return message.reply({ content: '❌ Salon de version introuvable !' });
+    await message.delete().catch(() => {});
+    await salon.send('# 🔧 Mise à Jour
+
+ 
+La nouvelle version du serveur la V.' + version + ' a bien été actualisé !
+
+By KPS Production
+
+<@&1481277922508669008>');
+    return;
+  }
+
   // ── !reglement ──
   if (message.content === '!reglement-topia') {
     if (message.author.id !== message.guild.ownerId) {
