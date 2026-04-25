@@ -12,14 +12,14 @@ const https = require('https');
 // ══════════════════════════════════════════
 const BOT_TOKEN             = process.env.BOT_TOKEN;
 const GUILD_ID              = '1432472817005236326';
-const ROLE_AUTO_ID          = process.env.ROLE_AUTO_ID;          // Rôle donné automatiquement à l'arrivée
+const ROLE_AUTO_ID          = '1433025817386156143';
 const WEBHOOK_TOPIA = process.env.WEBHOOK_TOPIA; // URL du webhook de bienvenue
-const ROLE_REGLEMENT_ID     = process.env.ROLE_REGLEMENT_ID;     // Rôle donné après acceptation du règlement
-const SALON_REGLEMENT       = process.env.SALON_REGLEMENT;       // Salon où poster l'embed règlement (via !reglement)
-const SALON_CANDID_EMBED    = process.env.SALON_CANDID_EMBED;    // Salon où poster l'embed candidatures
-const SALON_SUPPORT_EMBED   = process.env.SALON_SUPPORT_EMBED;   // Salon où poster l'embed tickets Support
-const SALON_MOD_EMBED       = process.env.SALON_MOD_EMBED;       // Salon où poster l'embed tickets Modérateur
-const ROLE_CLAIM            = process.env.ROLE_CLAIM;            // Rôle autorisant le claim de ticket/candidature
+const ROLE_REGLEMENT_ID     = '1432472817349431357';
+const SALON_REGLEMENT       = null;
+const SALON_CANDID_EMBED    = '1485781664507363508';
+const SALON_SUPPORT_EMBED   = '1497652935851769966';
+const SALON_MOD_EMBED       = '1485785710446510219';
+const ROLE_CLAIM            = '1432472817005236328';
 
 // ── Rôles staff (accès candidatures & tickets support) ──
 const ROLES_STAFF = [
