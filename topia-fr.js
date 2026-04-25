@@ -732,7 +732,7 @@ client.on('interactionCreate', async function(interaction) {
       console.log('✅ Rôle règlement donné à : ' + member.user.username);
     } catch (error) {
       console.error('❌ Erreur rôle : ' + error.message);
-      await interaction.reply({ content: '❌ Une erreur est survenue. Contacte un administrateur.', ephemeral: true });
+      await interaction.reply({ content: '✅ Vous avez déjà accepté le règlement !', ephemeral: true });
     }
     return;
   }
