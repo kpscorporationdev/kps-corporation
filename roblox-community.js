@@ -14,8 +14,15 @@ const DEPARTURES_CHANNEL_ID = '1463496203147808909';
 const WEBHOOK_ARRIVALS      = process.env.WEBHOOK_RC_ARRIVALS;
 const WEBHOOK_GO            = process.env.WEBHOOK_RC_GO;
 
-const REGLEMENT_USER_ID     = '1474131126233731244'; // seul user autorisé à faire !reglement_rc
-const REGLEMENT_ROLE_ID     = '1499055628893683822'; // rôle attribué après acceptation
+const REGLEMENT_USER_ID     = '1474131126233731244';
+const REGLEMENT_ROLE_ID     = '1499055628893683822';
+
+// ── Service ──────────────────────────────────
+const CMD_CHANNEL_ID        = '1491714863234551970'; // salon des commandes !ServiceOn/Off
+const LOG_CHANNEL_ID        = '1491716031574446090'; // salon de l'embed de service
+const SERVICE_ROLE_ID       = '1500275387672821912'; // rôle "En service"
+
+let embedMessageId = null; // mémorise l'ID du message embed pour le modifier
 
 // ─────────────────────────────────────────────
 //  UTILITAIRE — Envoi webhook
@@ -36,9 +43,67 @@ async function sendWebhook(webhookUrl, payload) {
 }
 
 // ─────────────────────────────────────────────
+//  UTILITAIRE — Mise à jour de l'embed de service
+// ─────────────────────────────────────────────
+async function updateServiceEmbed(guild) {
+  try {
+    await guild.members.fetch();
+
+    const role = guild.roles.cache.get(SERVICE_ROLE_ID);
+    if (!role) return console.error('[Service Embed] Rôle introuvable.');
+
+    const onDuty = role.members.filter(m => !m.user.bot);
+
+    const description = onDuty.size === 0
+      ? '*Aucun animateur en service pour le moment.*'
+      : onDuty.map(m => `<@${m.id}>`).join('\n');
+
+    const embed = {
+      color: onDuty.size > 0 ? 0x57F287 : 0xED4245,
+      title: '🎙️ Animateur(s) en service',
+      description,
+      footer: { text: `${onDuty.size} animateur(s) actif(s) • Roblox Community` },
+      timestamp: new Date().toISOString(),
+    };
+
+    const logChannel = guild.channels.cache.get(LOG_CHANNEL_ID);
+    if (!logChannel) return console.error('[Service Embed] Salon de log introuvable.');
+
+    if (embedMessageId) {
+      try {
+        const existingMsg = await logChannel.messages.fetch(embedMessageId);
+        await existingMsg.edit({ embeds: [embed] });
+        return;
+      } catch {
+        embedMessageId = null; // message supprimé manuellement, on en recrée un
+      }
+    }
+
+    const sent = await logChannel.send({ embeds: [embed] });
+    embedMessageId = sent.id;
+
+  } catch (err) {
+    console.error('[Service Embed] Erreur lors de la mise à jour :', err);
+  }
+}
+
+// ─────────────────────────────────────────────
 //  MODULE PRINCIPAL
 // ─────────────────────────────────────────────
 module.exports = (client) => {
+
+  // ───────────────────────────────────────────
+  //  PRÊT — Initialisation de l'embed de service
+  // ───────────────────────────────────────────
+  client.once('ready', async () => {
+    console.log('[Roblox Community] Module chargé. Mise à jour de l\'embed de service…');
+    try {
+      const guild = client.guilds.cache.get(GUILD_ID);
+      if (guild) await updateServiceEmbed(guild);
+    } catch (err) {
+      console.error('[Service] Erreur au démarrage :', err);
+    }
+  });
 
   // ───────────────────────────────────────────
   //  ARRIVÉE D'UN MEMBRE
@@ -148,75 +213,118 @@ module.exports = (client) => {
   });
 
   // ───────────────────────────────────────────
-  //  COMMANDE !reglement_rc
+  //  COMMANDES (messageCreate)
   // ───────────────────────────────────────────
   client.on('messageCreate', async (message) => {
     if (message.guild?.id !== GUILD_ID) return;
-    if (message.author.id !== REGLEMENT_USER_ID) return;
-    if (message.content.trim() !== '!reglement_rc') return;
+    if (message.author.bot) return;
 
-    // Suppression du message de commande
-    try { await message.delete(); } catch {}
+    const cmd = message.content.trim();
 
-    const embed = new EmbedBuilder()
-      .setColor(0x5865F2)
-      .setTitle('📋 Règlement — Roblox Community')
-      .setDescription(
-        'Afin de garantir une bonne ambiance sur le serveur, merci de respecter les règles suivantes :\n\u200b'
-      )
-      .addFields(
-        {
-          name: '🔹 1. Respect obligatoire',
-          value: 'Tout membre doit être respectueux envers les autres.\n❌ Insultes, harcèlement, propos haineux → interdits.',
-        },
-        {
-          name: '🔹 2. Comportement en jeu (Roblox)',
-          value: 'Respectez les règles des jeux et des événements.\n❌ Triche, troll excessif ou anti-jeu → sanctionnable.',
-        },
-        {
-          name: '🔹 3. Spam / Flood',
-          value: '❌ Évitez le spam, les messages inutiles ou répétitifs.',
-        },
-        {
-          name: '🔹 4. Publicité',
-          value: '❌ Aucune publicité sans autorisation du staff.',
-        },
-        {
-          name: '🔹 5. Contenu interdit',
-          value: '❌ Contenu choquant, NSFW ou inapproprié strictement interdit.',
-        },
-        {
-          name: '🔹 6. Activité du serveur',
-          value: 'Les membres doivent rester actifs.\n➡️ En cas d\'absence, utilisez le salon prévu à cet effet.',
-        },
-        {
-          name: '🔹 7. Événements',
-          value: 'Les événements sont faits pour la communauté.\nMerci de participer et de respecter l\'organisation.',
-        },
-        {
-          name: '🔹 8. Staff',
-          value: 'Le staff a toujours le dernier mot.\nRespectez leurs décisions.',
-        },
-        {
-          name: '🔹 9. Sanctions',
-          value: 'Toute infraction peut entraîner :\n⚠️ Avertissement\n🚫 Mute / Kick / Ban',
-        },
-        {
-          name: '\u200b',
-          value: '✅ En restant sur le serveur, vous acceptez ce règlement.\n\n*Merci à tous et bon jeu sur Roblox Community !* 🔥',
-        }
-      )
-      .setFooter({ text: 'Roblox Community • Règlement officiel' })
-      .setTimestamp();
+    // ── !reglement_rc ──────────────────────
+    if (cmd === '!reglement_rc') {
+      if (message.author.id !== REGLEMENT_USER_ID) return;
 
-    const row = new ActionRowBuilder().addComponents(
-      new ButtonBuilder()
-        .setCustomId('rc_accept_reglement')
-        .setLabel('✅ Accepter le règlement')
-        .setStyle(ButtonStyle.Success)
-    );
+      try { await message.delete(); } catch {}
 
-    await message.channel.send({ embeds: [embed], components: [row] });
+      const embed = new EmbedBuilder()
+        .setColor(0x5865F2)
+        .setTitle('📋 Règlement — Roblox Community')
+        .setDescription(
+          'Afin de garantir une bonne ambiance sur le serveur, merci de respecter les règles suivantes :\n\u200b'
+        )
+        .addFields(
+          {
+            name: '🔹 1. Respect obligatoire',
+            value: 'Tout membre doit être respectueux envers les autres.\n❌ Insultes, harcèlement, propos haineux → interdits.',
+          },
+          {
+            name: '🔹 2. Comportement en jeu (Roblox)',
+            value: 'Respectez les règles des jeux et des événements.\n❌ Triche, troll excessif ou anti-jeu → sanctionnable.',
+          },
+          {
+            name: '🔹 3. Spam / Flood',
+            value: '❌ Évitez le spam, les messages inutiles ou répétitifs.',
+          },
+          {
+            name: '🔹 4. Publicité',
+            value: '❌ Aucune publicité sans autorisation du staff.',
+          },
+          {
+            name: '🔹 5. Contenu interdit',
+            value: '❌ Contenu choquant, NSFW ou inapproprié strictement interdit.',
+          },
+          {
+            name: '🔹 6. Activité du serveur',
+            value: 'Les membres doivent rester actifs.\n➡️ En cas d\'absence, utilisez le salon prévu à cet effet.',
+          },
+          {
+            name: '🔹 7. Événements',
+            value: 'Les événements sont faits pour la communauté.\nMerci de participer et de respecter l\'organisation.',
+          },
+          {
+            name: '🔹 8. Staff',
+            value: 'Le staff a toujours le dernier mot.\nRespectez leurs décisions.',
+          },
+          {
+            name: '🔹 9. Sanctions',
+            value: 'Toute infraction peut entraîner :\n⚠️ Avertissement\n🚫 Mute / Kick / Ban',
+          },
+          {
+            name: '\u200b',
+            value: '✅ En restant sur le serveur, vous acceptez ce règlement.\n\n*Merci à tous et bon jeu sur Roblox Community !* 🔥',
+          }
+        )
+        .setFooter({ text: 'Roblox Community • Règlement officiel' })
+        .setTimestamp();
+
+      const row = new ActionRowBuilder().addComponents(
+        new ButtonBuilder()
+          .setCustomId('rc_accept_reglement')
+          .setLabel('✅ Accepter le règlement')
+          .setStyle(ButtonStyle.Success)
+      );
+
+      return message.channel.send({ embeds: [embed], components: [row] });
+    }
+
+    // ── !ServiceOn / !ServiceOff ───────────
+    if (message.channel.id !== CMD_CHANNEL_ID) return;
+
+    const cmdLower = cmd.toLowerCase();
+
+    if (cmdLower === '!serviceon') {
+      const member = message.member;
+
+      if (member.roles.cache.has(SERVICE_ROLE_ID)) {
+        return message.reply({ content: '⚠️ Tu es déjà en service !', allowedMentions: { repliedUser: false } });
+      }
+
+      try {
+        await member.roles.add(SERVICE_ROLE_ID);
+        await message.reply({ content: '✅ Tu es maintenant **en service** !', allowedMentions: { repliedUser: false } });
+        await updateServiceEmbed(message.guild);
+      } catch (err) {
+        console.error('[ServiceOn] Erreur :', err);
+        message.reply({ content: '❌ Impossible d\'ajouter le rôle. Vérifie mes permissions.', allowedMentions: { repliedUser: false } });
+      }
+
+    } else if (cmdLower === '!serviceoff') {
+      const member = message.member;
+
+      if (!member.roles.cache.has(SERVICE_ROLE_ID)) {
+        return message.reply({ content: '⚠️ Tu n\'es pas en service !', allowedMentions: { repliedUser: false } });
+      }
+
+      try {
+        await member.roles.remove(SERVICE_ROLE_ID);
+        await message.reply({ content: '🔴 Tu es maintenant **hors service**.', allowedMentions: { repliedUser: false } });
+        await updateServiceEmbed(message.guild);
+      } catch (err) {
+        console.error('[ServiceOff] Erreur :', err);
+        message.reply({ content: '❌ Impossible de retirer le rôle. Vérifie mes permissions.', allowedMentions: { repliedUser: false } });
+      }
+    }
   });
 
   // ───────────────────────────────────────────
@@ -229,7 +337,6 @@ module.exports = (client) => {
 
     const member = interaction.member;
 
-    // Vérifie si le membre a déjà le rôle
     if (member.roles.cache.has(REGLEMENT_ROLE_ID)) {
       return interaction.reply({
         content: '⚠️ Vous avez déjà accepté le règlement !',
