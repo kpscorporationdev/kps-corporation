@@ -44,11 +44,12 @@ function formatDuration(minutes) {
   return `${m}min`;
 }
 
-// Formate une Date en FR
+// Formate une Date en FR (fuseau Europe/Paris)
 function formatDate(date) {
   return date.toLocaleDateString('fr-FR', {
     day: '2-digit', month: 'long', year: 'numeric',
     hour: '2-digit', minute: '2-digit',
+    timeZone: 'Europe/Paris',
   });
 }
 
@@ -180,12 +181,7 @@ async function sendTierlist(message) {
     }).join('\n');
   }
 
-  // Prochain lundi à 00:01
-  const now = new Date();
-  const daysUntilMonday = (8 - now.getDay()) % 7 || 7;
-  const nextReset = new Date(now);
-  nextReset.setDate(now.getDate() + daysUntilMonday);
-  nextReset.setHours(0, 1, 0, 0);
+  const nextReset = getNextMondayParis();
 
   const embed = new EmbedBuilder()
     .setColor(0xF1C40F)
@@ -199,22 +195,54 @@ async function sendTierlist(message) {
 }
 
 // ─────────────────────────────────────────────
-//  RESET hebdomadaire — chaque lundi à 00:01
+//  RESET hebdomadaire — chaque lundi à 00:01 heure Paris
 // ─────────────────────────────────────────────
-function scheduleWeeklyReset() {
-  const now = new Date();
-  const daysUntilMonday = (8 - now.getDay()) % 7 || 7;
-  const nextReset = new Date(now);
-  nextReset.setDate(now.getDate() + daysUntilMonday);
-  nextReset.setHours(0, 1, 0, 0);
 
-  const msUntilReset = nextReset.getTime() - now.getTime();
-  console.log(`[Tierlist] Prochain reset dans ${Math.round(msUntilReset / 1000 / 60)} minutes (${formatDate(nextReset)}).`);
+// Calcule le timestamp UTC du prochain lundi à 00:01 heure de Paris
+function getNextMondayParis() {
+  const now = new Date();
+
+  // Récupère les composants de la date en heure Paris
+  const fmt = new Intl.DateTimeFormat('fr-FR', {
+    timeZone: 'Europe/Paris',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', weekday: 'short',
+    hour12: false,
+  });
+  const parts = Object.fromEntries(fmt.formatToParts(now).map(p => [p.type, p.value]));
+
+  const year    = parseInt(parts.year,  10);
+  const month   = parseInt(parts.month, 10) - 1; // 0-indexed
+  const day     = parseInt(parts.day,   10);
+  const weekday = ['dim','lun','mar','mer','jeu','ven','sam'].indexOf(parts.weekday.slice(0,3).toLowerCase());
+
+  // Jours jusqu'au prochain lundi : si on est lundi → 7 jours, sinon calcul normal
+  const daysUntil = weekday === 1 ? 7 : (8 - weekday) % 7;
+
+  // Construit "lundi prochain 00:01:00" dans le fuseau Paris, puis convertit en UTC
+  // On utilise une chaîne ISO et l'offset réel de Paris à ce moment
+  const targetParis = new Date(year, month, day + daysUntil, 0, 1, 0, 0);
+
+  // Offset actuel Paris en minutes (positif = en avance sur UTC)
+  const utcNow    = Date.UTC(year, month, day, parseInt(parts.hour,10), parseInt(parts.minute,10));
+  const offsetMs  = utcNow - now.getTime(); // différence entre UTC "paris" et UTC réel → offset Paris
+  // offsetMs ≈ parisOffset en ms (ex: -3600000 pour UTC+1, -7200000 pour UTC+2)
+
+  // targetParis est construit en heure locale de la machine (UTC sur Railway)
+  // On lui soustrait l'offset pour obtenir l'heure UTC correcte
+  return new Date(targetParis.getTime() - offsetMs);
+}
+
+function scheduleWeeklyReset() {
+  const nextReset    = getNextMondayParis();
+  const msUntilReset = nextReset.getTime() - Date.now();
+
+  console.log(`[Tierlist] Prochain reset lundi 00:01 Paris dans ${Math.round(msUntilReset / 1000 / 60)} min — ${formatDate(nextReset)}.`);
 
   setTimeout(() => {
     weeklyStats = {};
-    serviceSessionStart.clear(); // sécurité : vide aussi les sessions ouvertes
-    console.log('[Tierlist] ✅ Stats hebdomadaires réinitialisées.');
+    serviceSessionStart.clear();
+    console.log('[Tierlist] Stats hebdomadaires réinitialisées.');
     scheduleWeeklyReset();
   }, msUntilReset);
 }
