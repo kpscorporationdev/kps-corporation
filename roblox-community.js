@@ -401,7 +401,7 @@ module.exports = (client) => {
       return sendTierlist(message);
     }
 
-    // !forcestop_service @mention ─────────────
+    // !forcestop_service {userId} ─────────────
     if (cmdLower.startsWith('!forcestop_service')) {
       // Vérifie que l'auteur est bien un membre du staff (permission ManageRoles ou Administrator)
       if (!message.member.permissions.has('ManageRoles')) {
@@ -411,11 +411,24 @@ module.exports = (client) => {
         });
       }
 
-      // Récupère la cible via la mention
-      const targetUser = message.mentions.members.first();
-      if (!targetUser) {
+      // Récupère l'ID fourni en argument
+      const args = cmd.trim().split(/\s+/);
+      const targetId = args[1];
+
+      if (!targetId || !/^\d+$/.test(targetId)) {
         return message.reply({
-          content: '⚠️ Utilisation : `!forcestop_service @membre`',
+          content: '⚠️ Utilisation : `!forcestop_service <ID du membre>`',
+          allowedMentions: { repliedUser: false },
+        });
+      }
+
+      // Récupère le membre via son ID
+      let targetUser;
+      try {
+        targetUser = await message.guild.members.fetch(targetId);
+      } catch {
+        return message.reply({
+          content: `❌ Impossible de trouver un membre avec l'ID \`${targetId}\`. Vérifie l'ID et réessaie.`,
           allowedMentions: { repliedUser: false },
         });
       }
