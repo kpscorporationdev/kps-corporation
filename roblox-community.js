@@ -117,7 +117,7 @@ async function updateServiceEmbed(guild) {
 // ─────────────────────────────────────────────
 //  LOG — Envoi d'un log dans le salon de logs
 // ─────────────────────────────────────────────
-async function sendServiceLog(guild, user, type, sessionMinutes = null) {
+async function sendServiceLog(guild, user, type, sessionMinutes = null, forcedBy = null) {
   const logChannel = guild.channels.cache.get(SERVICE_LOG_CHANNEL_ID);
   if (!logChannel) return console.error('[Service Log] Salon de logs introuvable.');
 
@@ -134,6 +134,21 @@ async function sendServiceLog(guild, user, type, sessionMinutes = null) {
       .addFields(
         { name: '👤 Animateur', value: `<@${user.id}> (${user.username})`, inline: true },
         { name: '🕐 Heure de prise', value: formatDate(now), inline: true },
+      )
+      .setFooter({ text: 'Roblox Community • Logs de service' })
+      .setTimestamp();
+  } else if (type === 'force') {
+    // Log spécifique pour un arrêt forcé par le staff
+    embed = new EmbedBuilder()
+      .setColor(0xFF8C00)
+      .setTitle('🛑 Fin de service forcée')
+      .setThumbnail(avatarUrl)
+      .addFields(
+        { name: '👤 Animateur',         value: `<@${user.id}> (${user.username})`,                     inline: true },
+        { name: '🔨 Forcé par',         value: forcedBy ? `<@${forcedBy.id}> (${forcedBy.username})` : 'Staff', inline: true },
+        { name: '🕐 Heure de fin',      value: formatDate(now),                                        inline: true },
+        { name: '⏱️ Durée de session',  value: sessionMinutes !== null ? formatDuration(sessionMinutes) : 'Inconnue', inline: true },
+        { name: '📊 Total semaine',     value: formatDuration(weeklyStats[user.id] || 0),               inline: true },
       )
       .setFooter({ text: 'Roblox Community • Logs de service' })
       .setTimestamp();
@@ -202,7 +217,6 @@ async function sendTierlist(message) {
 function getNextMondayParis() {
   const now = new Date();
 
-  // Récupère les composants de la date en heure Paris
   const fmt = new Intl.DateTimeFormat('fr-FR', {
     timeZone: 'Europe/Paris',
     year: 'numeric', month: '2-digit', day: '2-digit',
@@ -212,24 +226,17 @@ function getNextMondayParis() {
   const parts = Object.fromEntries(fmt.formatToParts(now).map(p => [p.type, p.value]));
 
   const year    = parseInt(parts.year,  10);
-  const month   = parseInt(parts.month, 10) - 1; // 0-indexed
+  const month   = parseInt(parts.month, 10) - 1;
   const day     = parseInt(parts.day,   10);
   const weekday = ['dim','lun','mar','mer','jeu','ven','sam'].indexOf(parts.weekday.slice(0,3).toLowerCase());
 
-  // Jours jusqu'au prochain lundi : si on est lundi → 7 jours, sinon calcul normal
   const daysUntil = weekday === 1 ? 7 : (8 - weekday) % 7;
 
-  // Construit "lundi prochain 00:01:00" dans le fuseau Paris, puis convertit en UTC
-  // On utilise une chaîne ISO et l'offset réel de Paris à ce moment
   const targetParis = new Date(year, month, day + daysUntil, 0, 1, 0, 0);
 
-  // Offset actuel Paris en minutes (positif = en avance sur UTC)
-  const utcNow    = Date.UTC(year, month, day, parseInt(parts.hour,10), parseInt(parts.minute,10));
-  const offsetMs  = utcNow - now.getTime(); // différence entre UTC "paris" et UTC réel → offset Paris
-  // offsetMs ≈ parisOffset en ms (ex: -3600000 pour UTC+1, -7200000 pour UTC+2)
+  const utcNow   = Date.UTC(year, month, day, parseInt(parts.hour,10), parseInt(parts.minute,10));
+  const offsetMs = utcNow - now.getTime();
 
-  // targetParis est construit en heure locale de la machine (UTC sur Railway)
-  // On lui soustrait l'offset pour obtenir l'heure UTC correcte
   return new Date(targetParis.getTime() - offsetMs);
 }
 
@@ -245,6 +252,27 @@ function scheduleWeeklyReset() {
     console.log('[Tierlist] Stats hebdomadaires réinitialisées.');
     scheduleWeeklyReset();
   }, msUntilReset);
+}
+
+// ─────────────────────────────────────────────
+//  HELPER — Logique commune de fin de service
+// ─────────────────────────────────────────────
+async function stopService(guild, targetMember, forcedBy = null) {
+  await targetMember.roles.remove(SERVICE_ROLE_ID);
+
+  let sessionMinutes = 0;
+  if (serviceSessionStart.has(targetMember.id)) {
+    const elapsed = Date.now() - serviceSessionStart.get(targetMember.id);
+    sessionMinutes = Math.round(elapsed / 1000 / 60);
+    serviceSessionStart.delete(targetMember.id);
+  }
+
+  weeklyStats[targetMember.id] = (weeklyStats[targetMember.id] || 0) + sessionMinutes;
+
+  await updateServiceEmbed(guild);
+  await sendServiceLog(guild, targetMember.user, forcedBy ? 'force' : 'off', sessionMinutes, forcedBy);
+
+  return sessionMinutes;
 }
 
 // ─────────────────────────────────────────────
@@ -373,6 +401,51 @@ module.exports = (client) => {
       return sendTierlist(message);
     }
 
+    // !forcestop_service @mention ─────────────
+    if (cmdLower.startsWith('!forcestop_service')) {
+      // Vérifie que l'auteur est bien un membre du staff (permission ManageRoles ou Administrator)
+      if (!message.member.permissions.has('ManageRoles')) {
+        return message.reply({
+          content: '❌ Tu n\'as pas la permission d\'utiliser cette commande.',
+          allowedMentions: { repliedUser: false },
+        });
+      }
+
+      // Récupère la cible via la mention
+      const targetUser = message.mentions.members.first();
+      if (!targetUser) {
+        return message.reply({
+          content: '⚠️ Utilisation : `!forcestop_service @membre`',
+          allowedMentions: { repliedUser: false },
+        });
+      }
+
+      // Vérifie que la cible est bien en service
+      if (!targetUser.roles.cache.has(SERVICE_ROLE_ID)) {
+        return message.reply({
+          content: `⚠️ <@${targetUser.id}> n'est pas en service.`,
+          allowedMentions: { repliedUser: false },
+        });
+      }
+
+      try {
+        const sessionMinutes = await stopService(message.guild, targetUser, message.author);
+
+        await message.reply({
+          content: `🛑 Le service de <@${targetUser.id}> a été **arrêté de force** par <@${message.author.id}>. (Session : ${formatDuration(sessionMinutes)})`,
+          allowedMentions: { repliedUser: false },
+        });
+      } catch (err) {
+        console.error('[ForceStop] Erreur :', err);
+        message.reply({
+          content: '❌ Impossible de stopper le service. Vérifie mes permissions.',
+          allowedMentions: { repliedUser: false },
+        });
+      }
+
+      return;
+    }
+
     // !ServiceOn / !ServiceOff ────────────────
     if (message.channel.id !== CMD_CHANNEL_ID) return;
 
@@ -386,7 +459,7 @@ module.exports = (client) => {
 
       try {
         await member.roles.add(SERVICE_ROLE_ID);
-        serviceSessionStart.set(user.id, Date.now()); // démarre le chrono
+        serviceSessionStart.set(user.id, Date.now());
         await message.reply({ content: '✅ Tu es maintenant **en service** !', allowedMentions: { repliedUser: false } });
         await updateServiceEmbed(message.guild);
         await sendServiceLog(message.guild, user, 'on');
@@ -404,22 +477,8 @@ module.exports = (client) => {
       }
 
       try {
-        await member.roles.remove(SERVICE_ROLE_ID);
-
-        // Calcule la durée de la session
-        let sessionMinutes = 0;
-        if (serviceSessionStart.has(user.id)) {
-          const elapsed = Date.now() - serviceSessionStart.get(user.id);
-          sessionMinutes = Math.round(elapsed / 1000 / 60);
-          serviceSessionStart.delete(user.id);
-        }
-
-        // Cumule dans les stats hebdo
-        weeklyStats[user.id] = (weeklyStats[user.id] || 0) + sessionMinutes;
-
+        const sessionMinutes = await stopService(message.guild, member);
         await message.reply({ content: '🔴 Tu es maintenant **hors service**.', allowedMentions: { repliedUser: false } });
-        await updateServiceEmbed(message.guild);
-        await sendServiceLog(message.guild, user, 'off', sessionMinutes);
       } catch (err) {
         console.error('[ServiceOff] Erreur :', err);
         message.reply({ content: '❌ Impossible de retirer le rôle. Vérifie mes permissions.', allowedMentions: { repliedUser: false } });
