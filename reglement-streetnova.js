@@ -5,7 +5,7 @@ const { ActionRowBuilder, ButtonBuilder, ButtonStyle, EmbedBuilder } = require('
 // ══════════════════════════════════════════
 const GUILD_ID          = '1432658174967677033';
 const CHANNEL_ID        = '1432658603273097216';
-const ROLE_REGLEMENT_ID = '1495033427949392013';
+const ROLE_REGLEMENT_ID = '1502685338307661935';
 const COMMANDE          = '!reglement-streetnova';
 
 // ══════════════════════════════════════════
