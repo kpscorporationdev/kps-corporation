@@ -5,10 +5,10 @@ const http  = require('http');
 // ══════════════════════════════════════════
 //   CONFIGURATION — STREETNOVA
 // ══════════════════════════════════════════
-const GUILD_ID            = '1432658174967677033';
-const CHANNEL_ID          = '1432658603273097216';
-const ROLE_REGLEMENT_ID   = '1502685338307661935';
-const COMMANDE            = '!reglement-streetnova';
+const GUILD_ID          = '1432658174967677033';
+const CHANNEL_ID        = '1432658603273097216';
+const ROLE_REGLEMENT_ID = '1502685338307661935';
+const COMMANDE          = '!reglement-streetnova';
 
 // ══════════════════════════════════════════
 //   UTILITAIRE WEBHOOK
@@ -75,7 +75,7 @@ module.exports = function(client) {
       return;
     }
 
-    let methode = 'une méthode inconnue';
+    let methode = `***une méthode inconnue*** ❓`;
 
     try {
       const newInvites = await member.guild.invites.fetch().catch(() => null);
@@ -91,12 +91,12 @@ module.exports = function(client) {
 
         if (usedInvite) {
           if (usedInvite.inviter) {
-            methode = `une invitation de **${usedInvite.inviter.username}**`;
+            methode = `***une invitation de*** **${usedInvite.inviter.username}** *(${usedInvite.uses})* 🔥`;
           } else {
-            methode = `le lien d'invitation personnalisé \`${usedInvite.code}\``;
+            methode = `***le lien d'invitation personnalisé du serveur*** 🔗`;
           }
         } else if (member.guild.vanityURLCode) {
-          methode = `le lien d'invitation personnalisé \`${member.guild.vanityURLCode}\``;
+          methode = `***le lien d'invitation personnalisé du serveur*** 🔗`;
         }
       }
     } catch (err) {
@@ -106,8 +106,8 @@ module.exports = function(client) {
     const mention = `<@${member.user.id}>`;
     const payload = {
       content:
-        `Bienvenue ${mention} sur Street Nova 🛹\n` +
-        `${mention} a rejoint grâce à ${methode}`,
+        `🛹 ***Bienvenue*** ${mention} ***sur Street Nova !***\n` +
+        `╰➤ 🔗 __A rejoint via__ ${methode}`,
       allowed_mentions: { users: [member.user.id] },
     };
 
