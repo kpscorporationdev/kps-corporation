@@ -119,6 +119,33 @@ module.exports = function(client) {
     }
   });
 
+  // ── Boost via webhook ──
+  client.on('guildMemberUpdate', async (oldMember, newMember) => {
+    if (newMember.guild.id !== GUILD_ID) return;
+
+    const aBoosté = !oldMember.premiumSince && newMember.premiumSince;
+    if (!aBoosté) return;
+
+    const webhookUrl = process.env.WEBHOOK_SN_BOOST;
+    if (!webhookUrl) {
+      console.error('❌ [STREETNOVA] Variable WEBHOOK_SN_BOOST manquante.');
+      return;
+    }
+
+    const mention = `<@${newMember.user.id}>`;
+    const payload = {
+      content: `🛹 ***Merci*** ${mention} ***d'avoir boosté le serveur Street Nova !***`,
+      allowed_mentions: { users: [newMember.user.id] },
+    };
+
+    try {
+      await sendWebhook(webhookUrl, payload);
+      console.log(`✅ [STREETNOVA] Boost détecté pour : ${newMember.user.username}`);
+    } catch (err) {
+      console.error(`❌ [STREETNOVA] Erreur envoi webhook boost : ${err.message}`);
+    }
+  });
+
   // ── Commande règlement ──
   client.on('messageCreate', async function(message) {
     if (message.guild?.id !== GUILD_ID) return;
