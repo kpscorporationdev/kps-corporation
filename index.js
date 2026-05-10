@@ -7,13 +7,13 @@ const client = new Client({
     GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildInvites, // ← nécessaire pour tracker les invitations
   ],
 });
 
 // Chargement des modules
 require('./rayuna')(client);
-require('./bienvenue-streetnova')(client);
-require('./reglement-streetnova')(client);
+require('./street-nova')(client);   // ← remplace bienvenue-streetnova + reglement-streetnova
 require('./topia-fr');
 
 client.once('ready', () => {
