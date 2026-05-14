@@ -8,6 +8,28 @@ const {
 } = require('discord.js');
 const https = require('https');
 const http  = require('http');
+const fs    = require('fs');
+const path  = require('path');
+
+// ── Persistance des compteurs de tickets ───────────────────────────
+const COUNTERS_FILE = path.join(__dirname, 'ticket_counters.json');
+
+function loadCounters() {
+  try {
+    if (fs.existsSync(COUNTERS_FILE)) {
+      return JSON.parse(fs.readFileSync(COUNTERS_FILE, 'utf-8'));
+    }
+  } catch (_) {}
+  return { verif: 0, unban: 0, question: 0, report: 0, other: 0 };
+}
+
+function saveCounters(counters) {
+  try {
+    fs.writeFileSync(COUNTERS_FILE, JSON.stringify(counters, null, 2), 'utf-8');
+  } catch (err) {
+    console.error(`❌ [TICKETS] Erreur sauvegarde compteurs : ${err.message}`);
+  }
+}
 
 // ══════════════════════════════════════════════════════════════════════
 //   CONFIGURATION GLOBALE — STREETNOVA
@@ -52,8 +74,8 @@ const ADMIN_TICKET_ROLES = [
   '1504369719929606175',
 ];
 
-// ── Compteurs de tickets (en mémoire — remplace par une DB si besoin) ──
-const ticketCounters = { verif: 0, unban: 0, question: 0, report: 0, other: 0 };
+// ── Compteurs de tickets (persistants via fichier JSON) ────────────
+const ticketCounters = loadCounters();
 
 // ── Map des tickets ouverts : channelId → { owner, claimedBy, type } ──
 const openTickets = new Map();
@@ -247,6 +269,7 @@ async function createTicket(guild, member, typeKey) {
   const type = TICKET_CATEGORIES[typeKey];
   ticketCounters[typeKey]++;
   const count   = ticketCounters[typeKey];
+  saveCounters(ticketCounters); // Persistance du compteur
   const name    = `${type.prefix}-${count}`;
 
   // Permissions : tout le monde deny, staff + owner allow
@@ -590,16 +613,26 @@ module.exports = function(client) {
       if (!_isStaff) {
         return interaction.reply({ content: '❌ Seul un membre du staff peut prendre en charge un ticket.', ephemeral: true });
       }
-      if (ticketData.claimedBy) {
-        return interaction.reply({
-          content: `❌ Ce ticket est déjà pris en charge par <@${ticketData.claimedBy}>. Utilisez le bouton **Transférer** pour récupérer la propriété.`,
-          ephemeral: true,
-        });
+      // Déjà pris en charge par soi-même → message discret
+      if (ticketData.claimedBy === member.id) {
+        return interaction.reply({ content: '✅ Vous avez déjà la prise en charge de ce ticket.', ephemeral: true });
+      }
+      // Pris en charge par quelqu'un d'autre
+      if (ticketData.claimedBy && ticketData.claimedBy !== member.id) {
+        if (!_isAdmin) {
+          return interaction.reply({
+            content: `❌ Ce ticket est déjà pris en charge par <@${ticketData.claimedBy}>. Utilisez le bouton **Transférer** pour récupérer la propriété.`,
+            ephemeral: true,
+          });
+        }
+        // Admin qui reprend la claim de force
+        const prev = ticketData.claimedBy;
+        ticketData.claimedBy = member.id;
+        await interaction.reply({ content: `🔁 <@${member.id}> (admin) a repris la prise en charge de <@${prev}>.` });
+        return;
       }
       ticketData.claimedBy = member.id;
-      await interaction.reply({
-        content: `✅ <@${member.id}> a pris en charge ce ticket.`,
-      });
+      await interaction.reply({ content: `✅ <@${member.id}> a pris en charge ce ticket.` });
       return;
     }
 
