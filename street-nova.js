@@ -114,6 +114,13 @@ const MODO_ADMIN_ROLES = [
   '1504369783393488966',
 ];
 
+// Roles exclusifs au ticket Signalement Staff
+const MODO_STAFF_REPORT_STAFF_ROLES = [
+  '1487792404886065172',
+  '1504947070556176384',
+  '1504372115305005176',
+];
+
 // ══════════════════════════════════════════════════════════════════════
 //   ETAT GLOBAL
 // ══════════════════════════════════════════════════════════════════════
@@ -271,7 +278,7 @@ async function createTicket(guild, member, typeKey, config) {
         PermissionFlagsBits.AttachFiles,
       ],
     },
-    ...staffRoles.map(roleId => ({
+    ...effectiveStaffRoles.map(roleId => ({
       id   : roleId,
       allow: [
         PermissionFlagsBits.ViewChannel,
@@ -302,7 +309,11 @@ async function createTicket(guild, member, typeKey, config) {
     config,
   });
 
-  const mentions = [...pingRoles.map(r => `<@&${r}>`), `<@${member.id}>`].join(' ');
+  // Pour le ticket Signalement Staff : rôles restreints
+  const effectiveStaffRoles = (typeKey === 'm_staff') ? MODO_STAFF_REPORT_STAFF_ROLES : staffRoles;
+  const effectivePingRoles  = (typeKey === 'm_staff') ? MODO_STAFF_REPORT_STAFF_ROLES : pingRoles;
+
+  const mentions = [...effectivePingRoles.map(r => `<@&${r}>`), `<@${member.id}>`].join(' ');
 
   const embed = new EmbedBuilder()
     .setTitle(`🎫 Ticket - ${type.name}`)
@@ -315,7 +326,7 @@ async function createTicket(guild, member, typeKey, config) {
       `**Type :** ${type.name}\n` +
       `**Systeme :** ${system === 'modo' ? '🛡️ Moderation' : '🎧 Support'}`
     )
-    .setColor(system === 'modo' ? 0x7C3AED : 0x7C3AED)
+    .setColor(system === 'modo' ? 0x4FC3F7 : 0x2ECC71)
     .setFooter({ text: `Street Nova - ${system === 'modo' ? 'Moderation' : 'Support'}` })
     .setTimestamp();
 
@@ -361,7 +372,12 @@ async function handleTicketAction(interaction, action, ticketData) {
     }
     const prev = ticketData.claimedBy;
     ticketData.claimedBy = null;
-    return interaction.reply({ content: `↩️ <@${prev}> a retire sa prise en charge de ce ticket.` });
+    // Si c'est le claimeur lui-même qui retire
+    if (prev === member.id) {
+      return interaction.reply({ content: `↩️ <@${member.id}> a retire sa prise en charge de ce ticket.` });
+    }
+    // Si c'est un admin qui retire la propriete de quelqu'un d'autre
+    return interaction.reply({ content: `↩️ <@${member.id}> a retire la prise en charge du ticket a <@${prev}>.` });
   }
 
   if (action === 'transfer') {
@@ -515,20 +531,17 @@ module.exports = function(client) {
       await message.delete().catch(() => {});
       if (message.author.id !== message.guild.ownerId) return;
       const embed = new EmbedBuilder()
-        .setTitle('🎧 Street Nova — Support')
+        .setTitle('Street Nova — Support')
         .setDescription(
-          '**Bienvenue au support officiel de Street Nova.**\n\n' +
-          'Notre equipe est disponible pour vous accompagner dans toutes vos demarches.\n' +
-          'Selectionnez la categorie correspondant a votre demande ci-dessous.\n\n' +
-          '> 🪪 **Aide a la Verification** — Probleme lors de votre verification sur le serveur ?\n' +
-          '> 🔨 **Aide Debannissement** — Souhaitez-vous faire appel d\'un bannissement ?\n' +
-          '> 💬 **Aide Question** — Vous avez une question generale sur le serveur ?\n' +
-          '> 🚨 **Aide Signalement** — Signaler un membre ou un comportement ?\n' +
-          '> 🎫 **Autre Aide** — Votre demande ne rentre dans aucune categorie ?\n\n' +
-          '*Un seul ticket actif par categorie et par personne.*'
+          'Selectionnez la categorie correspondant a votre demande.\n\n' +
+          '🪪 **Aide a la Verification**\n' +
+          '🔨 **Aide Debannissement**\n' +
+          '💬 **Aide Question**\n' +
+          '🚨 **Aide Signalement**\n' +
+          '🎫 **Autre Aide**'
         )
-        .setColor(0x7C3AED)
-        .setFooter({ text: 'Street Nova — Support' })
+        .setColor(0x2ECC71)
+        .setFooter({ text: 'Street Nova — Support • Un ticket par categorie' })
         .setTimestamp();
       await message.channel.send({
         embeds    : [embed],
@@ -549,20 +562,17 @@ module.exports = function(client) {
       await message.delete().catch(() => {});
       if (message.author.id !== message.guild.ownerId) return;
       const embed = new EmbedBuilder()
-        .setTitle('🛡️ Street Nova — Moderation')
+        .setTitle('Street Nova — Moderation')
         .setDescription(
-          '**Bienvenue au pole moderation de Street Nova.**\n\n' +
-          'Ce systeme vous permet de soumettre une demande directement aupres de notre equipe de moderation.\n' +
-          'Selectionnez la categorie correspondant a votre situation ci-dessous.\n\n' +
-          '> 🔨 **Debannissement** — Faire appel d\'un bannissement prononce par la moderation ?\n' +
-          '> 🚨 **Signalement** — Signaler un membre pour comportement inapproprie ?\n' +
-          '> 🐛 **Signalement Bug** — Vous avez trouve un bug ou dysfonctionnement sur le serveur ?\n' +
-          '> 🛡️ **Signalement Staff** — Signaler le comportement d\'un membre du staff ?\n' +
-          '> 🎫 **Autre Aide** — Votre demande ne rentre dans aucune categorie ?\n\n' +
-          '*Un seul ticket actif par categorie et par personne. Toute plainte abusive sera sanctionnee.*'
+          'Selectionnez la categorie correspondant a votre demande.\n\n' +
+          '🔨 **Debannissement**\n' +
+          '🚨 **Signalement**\n' +
+          '🐛 **Signalement Bug**\n' +
+          '🛡️ **Signalement Staff**\n' +
+          '🎫 **Autre Aide**'
         )
-        .setColor(0xED3A3A)
-        .setFooter({ text: 'Street Nova — Moderation' })
+        .setColor(0x4FC3F7)
+        .setFooter({ text: 'Street Nova — Moderation • Un ticket par categorie' })
         .setTimestamp();
       await message.channel.send({
         embeds    : [embed],
