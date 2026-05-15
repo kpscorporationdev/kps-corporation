@@ -42,11 +42,11 @@ const COMMANDE          = '!reglement-streetnova';
 
 // ── Catégories des tickets ──────────────────────────────────────────
 const TICKET_CATEGORIES = {
-  verif    : { id: '1504102263042478141', name: 'Aide à la Vérification', prefix: 'ticket-vérif',    logChannel: '1504380575908368384' },
-  unban    : { id: '1504114655331745903', name: 'Aide Débannissement',    prefix: 'ticket-unban',    logChannel: '1504380645013458994' },
-  question : { id: '1504115082760683530', name: 'Aide Question',          prefix: 'ticket-question', logChannel: '1504380726328557659' },
-  report   : { id: '1504115141745053847', name: 'Aide Signalement',       prefix: 'ticket-report',   logChannel: '1504380760038051910' },
-  other    : { id: '1504115231213748347', name: 'Autre Aide',             prefix: 'ticket-others',   logChannel: '1504380793538216058' },
+  verif    : { id: '1504102263042478141', name: '🪪 Aide à la Vérification', prefix: 'ticket-vérif',    logChannel: '1504380575908368384' },
+  unban    : { id: '1504114655331745903', name: '🔨 Aide Débannissement',    prefix: 'ticket-unban',    logChannel: '1504380645013458994' },
+  question : { id: '1504115082760683530', name: '💬 Aide Question',          prefix: 'ticket-question', logChannel: '1504380726328557659' },
+  report   : { id: '1504115141745053847', name: '🚨 Aide Signalement',       prefix: 'ticket-report',   logChannel: '1504380760038051910' },
+  other    : { id: '1504115231213748347', name: '🎫 Autre Aide',             prefix: 'ticket-others',   logChannel: '1504380793538216058' },
 };
 
 // ── Rôles autorisés à voir / interagir avec les tickets ────────────
@@ -504,11 +504,11 @@ module.exports = function(client) {
           '**Bienvenue au support officiel de Street Nova.**\n\n' +
           'Notre équipe est disponible pour vous accompagner dans toutes vos démarches. ' +
           'Sélectionnez la catégorie correspondant à votre demande en cliquant sur l\'un des boutons ci-dessous.\n\n' +
-          '> 🔵 **Aide à la Vérification** — Vous rencontrez un problème lors de votre vérification sur le serveur ?\n' +
-          '> 🔴 **Aide Débannissement** — Vous souhaitez faire appel d\'un bannissement ?\n' +
-          '> 🟢 **Aide Question** — Vous avez une question générale sur le serveur ?\n' +
-          '> 🟡 **Aide Signalement** — Vous souhaitez signaler un membre ou un comportement ?\n' +
-          '> ⚪ **Autre Aide** — Votre demande ne rentre dans aucune catégorie ci-dessus ?\n\n' +
+          '> 🪪 **Aide à la Vérification** — Vous rencontrez un problème lors de votre vérification sur le serveur ?\n' +
+          '> 🔨 **Aide Débannissement** — Vous souhaitez faire appel d\'un bannissement ?\n' +
+          '> 💬 **Aide Question** — Vous avez une question générale sur le serveur ?\n' +
+          '> 🚨 **Aide Signalement** — Vous souhaitez signaler un membre ou un comportement ?\n' +
+          '> 🎫 **Autre Aide** — Votre demande ne rentre dans aucune catégorie ci-dessus ?\n\n' +
           '*Nos équipes s\'engagent à traiter votre demande dans les meilleurs délais. Merci de votre confiance.*'
         )
         .setColor(0x7C3AED)
@@ -516,11 +516,11 @@ module.exports = function(client) {
         .setTimestamp();
 
       const row = new ActionRowBuilder().addComponents(
-        new ButtonBuilder().setCustomId('ticket_open_verif')    .setLabel('🔵 Aide à la Vérification').setStyle(ButtonStyle.Primary),
-        new ButtonBuilder().setCustomId('ticket_open_unban')    .setLabel('🔴 Aide Débannissement')   .setStyle(ButtonStyle.Danger),
-        new ButtonBuilder().setCustomId('ticket_open_question') .setLabel('🟢 Aide Question')         .setStyle(ButtonStyle.Success),
-        new ButtonBuilder().setCustomId('ticket_open_report')   .setLabel('🟡 Aide Signalement')      .setStyle(ButtonStyle.Secondary),
-        new ButtonBuilder().setCustomId('ticket_open_other')    .setLabel('⚪ Autre Aide')             .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId('ticket_open_verif')    .setLabel('🪪 Aide à la Vérification').setStyle(ButtonStyle.Primary),
+        new ButtonBuilder().setCustomId('ticket_open_unban')    .setLabel('🔨 Aide Débannissement')   .setStyle(ButtonStyle.Danger),
+        new ButtonBuilder().setCustomId('ticket_open_question') .setLabel('💬 Aide Question')         .setStyle(ButtonStyle.Success),
+        new ButtonBuilder().setCustomId('ticket_open_report')   .setLabel('🚨 Aide Signalement')      .setStyle(ButtonStyle.Secondary),
+        new ButtonBuilder().setCustomId('ticket_open_other')    .setLabel('🎫 Autre Aide')             .setStyle(ButtonStyle.Secondary),
       );
 
       await message.channel.send({ embeds: [embed], components: [row] });
