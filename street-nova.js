@@ -267,6 +267,10 @@ async function createTicket(guild, member, typeKey, config) {
 
   const name = `${type.prefix}-${count}`;
 
+  // Roles effectifs (Signalement Staff = acces restreint)
+  const effectiveStaffRoles = (typeKey === 'm_staff') ? MODO_STAFF_REPORT_STAFF_ROLES : staffRoles;
+  const effectivePingRoles  = (typeKey === 'm_staff') ? MODO_STAFF_REPORT_STAFF_ROLES : pingRoles;
+
   const permOverwrites = [
     { id: guild.roles.everyone, deny: [PermissionFlagsBits.ViewChannel] },
     {
@@ -308,10 +312,6 @@ async function createTicket(guild, member, typeKey, config) {
     system,
     config,
   });
-
-  // Pour le ticket Signalement Staff : rôles restreints
-  const effectiveStaffRoles = (typeKey === 'm_staff') ? MODO_STAFF_REPORT_STAFF_ROLES : staffRoles;
-  const effectivePingRoles  = (typeKey === 'm_staff') ? MODO_STAFF_REPORT_STAFF_ROLES : pingRoles;
 
   const mentions = [...effectivePingRoles.map(r => `<@&${r}>`), `<@${member.id}>`].join(' ');
 
