@@ -628,7 +628,7 @@ client.on('messageCreate', async function(message) {
       'Bonjour,\n\n' +
       'Nous avons le plaisir de vous convier à rejoindre **Street Nova**, notre tout nouveau serveur Discord.\n\n' +
       'Une communauté soigneusement construite vous attend, avec une équipe dédiée et un environnement de qualité.\n\n' +
-      '> 🔗 **Rejoindre le serveur :** https://discord.gg/BRDdpaUcAa\n\n' +
+      '> 🔗 **Rejoindre le serveur :** https://discord.gg/kmDy9C998H\n\n' +
       'Nous serions ravis de vous compter parmi nous.\n\n' +
       '*— L\'équipe Street Nova*';
 
