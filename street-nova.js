@@ -691,7 +691,42 @@ module.exports = function(client) {
     // ── Ouverture Support ──
     const supportOpenMap = { 'ts_open_verif': 'verif', 'ts_open_unban': 'unban', 'ts_open_question': 'question', 'ts_open_report': 'report', 'ts_open_other': 'other' };
     if (supportOpenMap[customId]) {
-      const typeKey     = supportOpenMap[customId];
+      const typeKey = supportOpenMap[customId];
+
+      // Verification des roles requis pour certaines categories
+      const ROLE_REGLEMENT  = '1502685338307661935';
+      const ROLE_BLOXLINK   = '1502670104981405856';
+      const RESTRICTED_TYPES = ['unban', 'question', 'report'];
+
+      if (RESTRICTED_TYPES.includes(typeKey)) {
+        const hasReglement = member.roles.cache.has(ROLE_REGLEMENT);
+        const hasBloxlink  = member.roles.cache.has(ROLE_BLOXLINK);
+
+        if (!hasReglement && !hasBloxlink) {
+          return interaction.reply({
+            content:
+              '❌ Vous ne pouvez pas ouvrir ce type de ticket pour le moment.\n\n' +
+              '> 📋 **Reglement** — Vous devez accepter le reglement du serveur.\n' +
+              '> 🔗 **Verification Bloxlink** — Vous devez vous verifier via Bloxlink.',
+            ephemeral: true,
+          });
+        }
+        if (!hasReglement) {
+          return interaction.reply({
+            content:
+              '❌ Vous devez accepter le **reglement du serveur** avant de pouvoir ouvrir ce type de ticket.',
+            ephemeral: true,
+          });
+        }
+        if (!hasBloxlink) {
+          return interaction.reply({
+            content:
+              '❌ Vous devez effectuer votre **verification Bloxlink** avant de pouvoir ouvrir ce type de ticket.',
+            ephemeral: true,
+          });
+        }
+      }
+
       const userTickets = userOpenTickets.get(member.id) ?? new Set();
       if (userTickets.has(typeKey)) {
         return interaction.reply({ content: `❌ Vous avez deja un ticket **${SUPPORT_CATEGORIES[typeKey].name}** ouvert. Veuillez le clore avant d'en creer un nouveau.`, ephemeral: true });
