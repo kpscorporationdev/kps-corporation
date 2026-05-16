@@ -26,6 +26,7 @@ function loadCounters() {
   return {
     verif: 0, unban: 0, question: 0, report: 0, other: 0,
     m_unban: 0, m_report: 0, m_bug: 0, m_staff: 0, m_other: 0,
+    c_custom: 0, c_modo: 0, c_support: 0,
   };
 }
 
@@ -118,6 +119,34 @@ const MODO_ADMIN_ROLES = [
 const MODO_STAFF_REPORT_STAFF_ROLES = [
   '1487792404886065172',
   '1504947070556176384',
+  '1504372115305005176',
+];
+
+
+// ════════════════════════════════════
+//  SYSTEME 3 — CANDIDATURES
+// ════════════════════════════════════
+
+const CANDID_CATEGORIES = {
+  c_custom  : { id: '1505117059137409166', name: '🎨 Devenir Customiseur', prefix: 'candid-customiseur', logChannel: '1505117499828605040' },
+  c_modo    : { id: '1505117169820762212', name: '🛡️ Devenir Moderateur',  prefix: 'candid-modo',        logChannel: '1505117414055084043' },
+  c_support : { id: '1505117206562996325', name: '🎧 Devenir Support',     prefix: 'candid-support',     logChannel: '1505117454169276486' },
+};
+
+const CANDID_STAFF_ROLES = [
+  '1495444713136984215',
+  '1495035067767066764',
+  '1487792404886065172',
+  '1504372115305005176',
+];
+
+const CANDID_PING_ROLES = [
+  '1487792404886065172',
+  '1504372115305005176',
+];
+
+const CANDID_ADMIN_ROLES = [
+  '1487792404886065172',
   '1504372115305005176',
 ];
 
@@ -248,7 +277,7 @@ async function sendTranscript(guild, channel, ticketData) {
 }
 
 function buildTicketActionRow(system) {
-  const p = system === 'modo' ? 'tm' : 'ts';
+  const p = system === 'modo' ? 'tm' : system === 'candid' ? 'tc' : 'ts';
   return new ActionRowBuilder().addComponents(
     new ButtonBuilder().setCustomId(`${p}_claim`)   .setLabel('🙋 Prendre en charge')           .setStyle(ButtonStyle.Primary),
     new ButtonBuilder().setCustomId(`${p}_unclaim`) .setLabel('↩️ Retirer prise en charge')      .setStyle(ButtonStyle.Secondary),
@@ -585,6 +614,31 @@ module.exports = function(client) {
       console.log('✅ [TICKETS/MODO] Panel moderation poste.');
       return;
     }
+    // ── Panel Candidatures ──
+    if (message.content === '!candid_streetnova') {
+      await message.delete().catch(() => {});
+      if (message.author.id !== message.guild.ownerId) return;
+      const embed = new EmbedBuilder()
+        .setTitle('Street Nova — Candidatures')
+        .setDescription(
+          'Selectionnez le poste pour lequel vous souhaitez postuler.\n\n' +
+          '🎨 **Devenir Customiseur**\n' +
+          '🛡️ **Devenir Moderateur**\n' +
+          '🎧 **Devenir Support**'
+        )
+        .setColor(0xF5A623)
+        .setFooter({ text: 'Street Nova — Candidatures' });
+      await message.channel.send({
+        embeds    : [embed],
+        components: [new ActionRowBuilder().addComponents(
+          new ButtonBuilder().setCustomId('tc_open_c_custom') .setLabel('🎨 Devenir Customiseur').setStyle(ButtonStyle.Secondary),
+          new ButtonBuilder().setCustomId('tc_open_c_modo')   .setLabel('🛡️ Devenir Moderateur') .setStyle(ButtonStyle.Primary),
+          new ButtonBuilder().setCustomId('tc_open_c_support').setLabel('🎧 Devenir Support')     .setStyle(ButtonStyle.Success),
+        )],
+      });
+      console.log('✅ [CANDID] Panel candidatures poste.');
+      return;
+    }
   });
 
   // ══════════════════════════════════════════════════════════════════
@@ -671,6 +725,36 @@ module.exports = function(client) {
       const ticketData = openTickets.get(interaction.channelId);
       if (!ticketData || ticketData.system !== 'modo') return;
       return handleTicketAction(interaction, modoActions[customId], ticketData);
+    }
+
+    // ── Ouverture Candidatures ──
+    const candidOpenMap = { 'tc_open_c_custom': 'c_custom', 'tc_open_c_modo': 'c_modo', 'tc_open_c_support': 'c_support' };
+    if (candidOpenMap[customId]) {
+      const typeKey     = candidOpenMap[customId];
+      const userTickets = userOpenTickets.get(member.id) ?? new Set();
+      if (userTickets.has(typeKey)) {
+        return interaction.reply({ content: `❌ Vous avez deja une candidature **${CANDID_CATEGORIES[typeKey].name}** en cours. Veuillez attendre qu'elle soit traitee avant d'en soumettre une nouvelle.`, ephemeral: true });
+      }
+      await interaction.deferReply({ ephemeral: true });
+      try {
+        const config  = { categories: CANDID_CATEGORIES, staffRoles: CANDID_STAFF_ROLES, pingRoles: CANDID_PING_ROLES, adminRoles: CANDID_ADMIN_ROLES, system: 'candid' };
+        const channel = await createTicket(guild, member, typeKey, config);
+        userTickets.add(typeKey);
+        userOpenTickets.set(member.id, userTickets);
+        await interaction.editReply({ content: `✅ Votre candidature a ete soumise avec succes : <#${channel.id}>` });
+      } catch (err) {
+        console.error(`❌ [CANDID] Erreur creation candidature : ${err.message}`);
+        await interaction.editReply({ content: '❌ Une erreur est survenue lors de la creation de la candidature.' });
+      }
+      return;
+    }
+
+    // ── Actions Candidatures ──
+    const candidActions = { 'tc_claim': 'claim', 'tc_unclaim': 'unclaim', 'tc_transfer': 'transfer', 'tc_close': 'close' };
+    if (candidActions[customId]) {
+      const ticketData = openTickets.get(interaction.channelId);
+      if (!ticketData || ticketData.system !== 'candid') return;
+      return handleTicketAction(interaction, candidActions[customId], ticketData);
     }
   });
 
