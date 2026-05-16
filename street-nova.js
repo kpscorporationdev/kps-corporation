@@ -380,8 +380,8 @@ async function createTicket(guild, member, typeKey, config) {
       `**Type :** ${type.name}\n` +
       `**Systeme :** ${system === 'modo' ? '🛡️ Moderation' : '🎧 Support'}`
     )
-    .setColor(system === 'modo' ? 0x4FC3F7 : 0x2ECC71)
-    .setFooter({ text: `Street Nova - ${system === 'modo' ? 'Moderation' : 'Support'}` })
+    .setColor(0x7C3AED)
+    .setFooter({ text: `Street Nova - ${system === 'modo' ? 'Moderation' : system === 'candid' ? 'Candidatures' : 'Support'}` })
     .setTimestamp();
 
   await channel.send({ content: mentions, embeds: [embed], components: [buildTicketActionRow(system)] });
@@ -659,13 +659,11 @@ module.exports = function(client) {
         embeds    : [embed],
         components: [
           new ActionRowBuilder().addComponents(
-            new ButtonBuilder().setCustomId('tc_open_c_dev')      .setLabel('💻 Devenir Developpeur').setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId('tc_open_c_testeur')  .setLabel('🧪 Devenir Testeur')    .setStyle(ButtonStyle.Secondary),
-            new ButtonBuilder().setCustomId('tc_open_c_vidéaste') .setLabel('🎬 Devenir Vidéaste')   .setStyle(ButtonStyle.Secondary),
-          ),
-          new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId('tc_open_c_modo')     .setLabel('🛡️ Devenir Moderateur') .setStyle(ButtonStyle.Primary),
             new ButtonBuilder().setCustomId('tc_open_c_support')  .setLabel('🎧 Devenir Support')    .setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId('tc_open_c_dev')      .setLabel('💻 Devenir Developpeur').setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId('tc_open_c_testeur')  .setLabel('🧪 Devenir Testeur')    .setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId('tc_open_c_vidéaste') .setLabel('🎬 Devenir Vidéaste')   .setStyle(ButtonStyle.Danger),
           ),
         ],
       });
