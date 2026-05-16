@@ -26,7 +26,7 @@ function loadCounters() {
   return {
     verif: 0, unban: 0, question: 0, report: 0, other: 0,
     m_unban: 0, m_report: 0, m_bug: 0, m_staff: 0, m_other: 0,
-    c_custom: 0, c_modo: 0, c_support: 0,
+    c_dev: 0, c_testeur: 0, c_vidéaste: 0, c_modo: 0, c_support: 0,
   };
 }
 
@@ -128,9 +128,11 @@ const MODO_STAFF_REPORT_STAFF_ROLES = [
 // ════════════════════════════════════
 
 const CANDID_CATEGORIES = {
-  c_custom  : { id: '1505117059137409166', name: '🎨 Devenir Customiseur', prefix: 'candid-customiseur', logChannel: '1505117499828605040' },
-  c_modo    : { id: '1505117169820762212', name: '🛡️ Devenir Moderateur',  prefix: 'candid-modo',        logChannel: '1505117414055084043' },
-  c_support : { id: '1505117206562996325', name: '🎧 Devenir Support',     prefix: 'candid-support',     logChannel: '1505117454169276486' },
+  c_dev     : { id: '1505159888815263834', name: '💻 Devenir Developpeur', prefix: 'candid-dev',      logChannel: '1505159377462755481' },
+  c_testeur : { id: '1505159986370707537', name: '🧪 Devenir Testeur',     prefix: 'candid-testeurs', logChannel: '1505159490410905670' },
+  c_vidéaste: { id: '1505160238880395316', name: '🎬 Devenir Vidéaste',    prefix: 'candid-vidéaste', logChannel: '1505159531305373747' },
+  c_modo    : { id: '1505117169820762212', name: '🛡️ Devenir Moderateur',  prefix: 'candid-modo',     logChannel: '1505117414055084043' },
+  c_support : { id: '1505117206562996325', name: '🎧 Devenir Support',     prefix: 'candid-support',  logChannel: '1505117454169276486' },
 };
 
 // Roles de base communs a toutes les candidatures
@@ -151,14 +153,16 @@ const CANDID_ADMIN_ROLES_BASE = [
   '1504372115305005176',
 ];
 
-// Roles specifiques par type de candidature (acces + admin exclusif)
+// Roles specifiques par type (acces exclusif + admin + ping)
 const CANDID_EXTRA = {
-  c_custom  : { role: '1505125084338196551' }, // Admin + acces Customiseur uniquement
-  c_modo    : { role: '1504369783393488966' }, // Admin + acces Modo uniquement
-  c_support : { role: '1504369719929606175' }, // Admin + acces Support uniquement
+  c_dev     : { role: '1505155535140425809' }, // Developpeur
+  c_testeur : { role: '1505154872465424465' }, // Testeur
+  'c_vidéaste': { role: '1505154674385354833' }, // Vidéaste
+  c_modo    : { role: '1504369783393488966' }, // Moderateur
+  c_support : { role: '1504369719929606175' }, // Support
 };
 
-// Retourne la config complete (staff, ping, admin) pour un typeKey candid
+// Retourne la config complete pour un typeKey candid
 function getCandidConfig(typeKey) {
   const extra = CANDID_EXTRA[typeKey]?.role;
   return {
@@ -643,7 +647,9 @@ module.exports = function(client) {
         .setTitle('Street Nova — Candidatures')
         .setDescription(
           'Selectionnez le poste pour lequel vous souhaitez postuler.\n\n' +
-          '🎨 **Devenir Customiseur**\n' +
+          '💻 **Devenir Developpeur**\n' +
+          '🧪 **Devenir Testeur**\n' +
+          '🎬 **Devenir Vidéaste**\n' +
           '🛡️ **Devenir Moderateur**\n' +
           '🎧 **Devenir Support**'
         )
@@ -651,11 +657,17 @@ module.exports = function(client) {
         .setFooter({ text: 'Street Nova — Candidatures' });
       await message.channel.send({
         embeds    : [embed],
-        components: [new ActionRowBuilder().addComponents(
-          new ButtonBuilder().setCustomId('tc_open_c_custom') .setLabel('🎨 Devenir Customiseur').setStyle(ButtonStyle.Secondary),
-          new ButtonBuilder().setCustomId('tc_open_c_modo')   .setLabel('🛡️ Devenir Moderateur') .setStyle(ButtonStyle.Primary),
-          new ButtonBuilder().setCustomId('tc_open_c_support').setLabel('🎧 Devenir Support')     .setStyle(ButtonStyle.Success),
-        )],
+        components: [
+          new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('tc_open_c_dev')      .setLabel('💻 Devenir Developpeur').setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId('tc_open_c_testeur')  .setLabel('🧪 Devenir Testeur')    .setStyle(ButtonStyle.Secondary),
+            new ButtonBuilder().setCustomId('tc_open_c_vidéaste') .setLabel('🎬 Devenir Vidéaste')   .setStyle(ButtonStyle.Secondary),
+          ),
+          new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId('tc_open_c_modo')     .setLabel('🛡️ Devenir Moderateur') .setStyle(ButtonStyle.Primary),
+            new ButtonBuilder().setCustomId('tc_open_c_support')  .setLabel('🎧 Devenir Support')    .setStyle(ButtonStyle.Success),
+          ),
+        ],
       });
       console.log('✅ [CANDID] Panel candidatures poste.');
       return;
@@ -784,7 +796,7 @@ module.exports = function(client) {
     }
 
     // ── Ouverture Candidatures ──
-    const candidOpenMap = { 'tc_open_c_custom': 'c_custom', 'tc_open_c_modo': 'c_modo', 'tc_open_c_support': 'c_support' };
+    const candidOpenMap = { 'tc_open_c_dev': 'c_dev', 'tc_open_c_testeur': 'c_testeur', 'tc_open_c_vidéaste': 'c_vidéaste', 'tc_open_c_modo': 'c_modo', 'tc_open_c_support': 'c_support' };
     if (candidOpenMap[customId]) {
       const typeKey     = candidOpenMap[customId];
       const userTickets = userOpenTickets.get(member.id) ?? new Set();
