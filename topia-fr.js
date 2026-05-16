@@ -13,7 +13,7 @@ const https = require('https');
 const BOT_TOKEN             = process.env.BOT_TOKEN;
 const GUILD_ID              = '1432472817005236326';
 const ROLE_AUTO_ID          = '1433025817386156143';
-const WEBHOOK_TOPIA = process.env.WEBHOOK_TOPIA; // URL du webhook de bienvenue
+const WEBHOOK_TOPIA         = process.env.WEBHOOK_TOPIA;
 const ROLE_REGLEMENT_ID     = '1432472817349431357';
 const SALON_REGLEMENT       = null;
 const SALON_CANDID_EMBED    = '1485781664507363508';
@@ -21,7 +21,7 @@ const SALON_SUPPORT_EMBED   = '1497652935851769966';
 const SALON_MOD_EMBED       = '1485785710446510219';
 const ROLE_CLAIM            = '1432472817005236328';
 
-// ── Rôles staff (accès candidatures & tickets support) ──
+// ── Rôles staff ──
 const ROLES_STAFF = [
   '1433052694670475334',
   '1432839854911127625',
@@ -31,7 +31,6 @@ const ROLES_STAFF = [
   '1474133714391793784',
 ];
 
-// ── Rôles pouvant fermer les candidatures ──
 const ROLES_CLOSE_CANDID = [
   '1433052694670475334',
   '1432839854911127625',
@@ -41,7 +40,6 @@ const ROLES_CLOSE_CANDID = [
   '1474133714391793784',
 ];
 
-// ── Rôles staff accès tickets support ──
 const ROLES_STAFF_SUPPORT = [
   '1432841223118262413',
   '1433053281327775845',
@@ -55,7 +53,6 @@ const ROLES_STAFF_SUPPORT = [
   '1474133714391793784',
 ];
 
-// ── Rôles modérateurs (accès tickets Modérateur) ──
 const ROLES_MOD = [
   '1432840715020407014',
   '1433053130827894844',
@@ -67,14 +64,12 @@ const ROLES_MOD = [
   '1474093820785332458',
 ];
 
-// ── Mentions dans les tickets Modérateur ──
 const PING_ROLES_MOD = [
   '1432840715020407014',
   '1433053130827894844',
   '1432472817349431360',
 ];
 
-// ── Rôles pouvant fermer/transférer les tickets ──
 const ROLES_TRANSFER = [
   '1432840844754292766',
   '1433052694670475334',
@@ -85,7 +80,6 @@ const ROLES_TRANSFER = [
   '1474133714391793784',
 ];
 
-// ── Rôles pouvant utiliser !forcetransfertclaim ──
 const ROLES_FORCE_TRANSFER = [
   '1432840844754292766',
   '1433052694670475334',
@@ -109,8 +103,8 @@ const CANDID_TYPES = {
 };
 
 const candidCounters = { rp: 0, beta: 0, video: 0, dev: 0, agentRP: 0, support: 0, modo: 0 };
-const candidData     = {}; // channelId -> { type, creatorId, claimedBy, openedAt, timers, numero }
-const userCandid     = {}; // userId -> channelId
+const candidData     = {};
+const userCandid     = {};
 
 // ══════════════════════════════════════════
 //   TYPES DE TICKETS — SUPPORT
@@ -137,7 +131,7 @@ const TICKET_TYPES_MOD = {
 const ALL_TICKET_TYPES = { ...TICKET_TYPES_SUPPORT, ...TICKET_TYPES_MOD };
 
 // ══════════════════════════════════════════
-//   PERSISTANCE TICKETS (fichier JSON)
+//   PERSISTANCE TICKETS
 // ══════════════════════════════════════════
 const SAVE_FILE = path.join(__dirname, 'ticketData.json');
 
@@ -145,9 +139,9 @@ const ticketCounters = {
   verif: 0, unban: 0, question: 0, signal: 0, autre: 0,
   mod_unban: 0, mod_report: 0, mod_reportbug: 0, mod_reportstaff: 0, mod_autre: 0,
 };
-const ticketData     = {}; // channelId -> { type, creatorId, claimedBy, openedAt, timers, numero, ismod }
-const userTickets    = {}; // userId -> channelId (Support)
-const userTicketsMod = {}; // userId -> channelId (Modérateur)
+const ticketData     = {};
+const userTickets    = {};
+const userTicketsMod = {};
 
 function saveData() {
   const toSave = {
@@ -179,10 +173,10 @@ function loadData() {
 loadData();
 
 // ══════════════════════════════════════════
-//   PENDING TRANSFERS (candidatures & tickets)
+//   PENDING TRANSFERS
 // ══════════════════════════════════════════
-const pendingTransferCandid = {}; // userId -> channelId
-const pendingTransferTicket = {}; // userId -> channelId
+const pendingTransferCandid = {};
+const pendingTransferTicket = {};
 
 // ══════════════════════════════════════════
 //   CLIENT
@@ -364,28 +358,11 @@ async function createTicket(interaction, type, typeInfo, rolesAccess, pingRolesI
   return interaction.editReply({ content: '✅ Ton ticket a été créé : ' + channel.toString() });
 }
 
-// ── Mise à jour du statut ──
-function updateStatus() {
-  const guild       = client.guilds.cache.get(GUILD_ID);
-  const memberCount = guild ? guild.memberCount : '...';
-  client.user.setPresence({
-    activities: [
-      { name: 'Joue à Topia FR RP', type: ActivityType.Playing },
-      { type: ActivityType.Custom, name: 'custom', state: '👥 Nombres de Membre sur Topia : ' + memberCount },
-    ],
-    status: 'online',
-  });
-  console.log('🔄 Statut mis à jour — Membres : ' + memberCount);
-}
-
 // ══════════════════════════════════════════
 //   BOT PRÊT
 // ══════════════════════════════════════════
 client.once('ready', async () => {
   console.log('✅ Bot connecté en tant que : ' + client.user.tag);
-
-  updateStatus();
-  setInterval(updateStatus, 5 * 60 * 1000);
 
   // Relance les timers de couleur pour les tickets ouverts
   const guild = client.guilds.cache.get(GUILD_ID);
@@ -406,19 +383,16 @@ client.once('ready', async () => {
 });
 
 // ══════════════════════════════════════════
-//   NOUVEAU MEMBRE (Bienvenue + Rôle auto + Statut)
+//   NOUVEAU MEMBRE (Bienvenue + Rôle auto)
 // ══════════════════════════════════════════
 client.on('guildMemberAdd', async function(member) {
   if (member.guild.id !== GUILD_ID) return;
-
-  updateStatus();
 
   const user      = member.user;
   const username  = user.username;
   const mention   = '<@' + user.id + '>';
   const avatarURL = user.displayAvatarURL({ size: 256, extension: 'png' });
 
-  // Rôle automatique
   try {
     await member.roles.add(ROLE_AUTO_ID);
     console.log('✅ Rôle auto donné à : ' + username);
@@ -426,7 +400,6 @@ client.on('guildMemberAdd', async function(member) {
     console.error('❌ Erreur ajout rôle auto : ' + error.message);
   }
 
-  // Message de bienvenue (webhook)
   const now     = new Date();
   const dateStr = now.toLocaleDateString('fr-FR', {
     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
@@ -463,8 +436,6 @@ client.on('guildMemberAdd', async function(member) {
   req.end();
 });
 
-client.on('guildMemberRemove', () => updateStatus());
-
 // ══════════════════════════════════════════
 //   COMMANDES TEXTE
 // ══════════════════════════════════════════
@@ -486,7 +457,7 @@ client.on('messageCreate', async function(message) {
     return;
   }
 
-  // ── !reglement ──
+  // ── !reglement-topia ──
   if (message.content === '!reglement-topia') {
     if (message.author.id !== message.guild.ownerId) {
       return message.reply({ content: '❌ Seul le propriétaire du serveur 👑 peut utiliser cette commande !' });
@@ -498,20 +469,13 @@ client.on('messageCreate', async function(message) {
       .setColor(0x5865f2)
       .setDescription(
         '**Bienvenue sur le serveur ! Merci de lire et respecter les règles suivantes :**\n\n' +
-        '**1️⃣ Respectez tout le monde**\n' +
-        'Aucune insulte, discrimination ou harcèlement ne sera toléré.\n\n' +
-        '**2️⃣ Pas de spam**\n' +
-        'Évitez les messages répétitifs, les majuscules excessives et les floods.\n\n' +
-        '**3️⃣ Pas de publicité**\n' +
-        'Toute publicité non autorisée est interdite.\n\n' +
-        '**4️⃣ Contenu approprié**\n' +
-        'Aucun contenu NSFW, choquant ou illégal ne sera toléré.\n\n' +
-        '**5️⃣ Respectez les salons**\n' +
-        'Utilisez chaque salon pour son usage prévu.\n\n' +
-        '**6️⃣ Pas d\'usurpation d\'identité**\n' +
-        'Il est interdit de se faire passer pour un autre membre ou un staff.\n\n' +
-        '**7️⃣ Suivez les directives de Discord**\n' +
-        'Les [CGU de Discord](https://discord.com/terms) s\'appliquent sur ce serveur.\n\n' +
+        '**1️⃣ Respectez tout le monde**\nAucune insulte, discrimination ou harcèlement ne sera toléré.\n\n' +
+        '**2️⃣ Pas de spam**\nÉvitez les messages répétitifs, les majuscules excessives et les floods.\n\n' +
+        '**3️⃣ Pas de publicité**\nToute publicité non autorisée est interdite.\n\n' +
+        '**4️⃣ Contenu approprié**\nAucun contenu NSFW, choquant ou illégal ne sera toléré.\n\n' +
+        '**5️⃣ Respectez les salons**\nUtilisez chaque salon pour son usage prévu.\n\n' +
+        '**6️⃣ Pas d\'usurpation d\'identité**\nIl est interdit de se faire passer pour un autre membre ou un staff.\n\n' +
+        '**7️⃣ Suivez les directives de Discord**\nLes [CGU de Discord](https://discord.com/terms) s\'appliquent sur ce serveur.\n\n' +
         '*En cliquant sur le bouton ci-dessous, vous acceptez le règlement et obtenez l\'accès au serveur.*'
       )
       .setFooter({ text: 'Cliquez sur le bouton pour accepter le règlement' })
@@ -521,7 +485,6 @@ client.on('messageCreate', async function(message) {
       new ButtonBuilder().setCustomId('accepter_reglement').setLabel('✅ Accepter le Règlement').setStyle(ButtonStyle.Success)
     );
 
-    // Envoie dans le salon actuel (ou dans SALON_REGLEMENT si défini)
     const target = SALON_REGLEMENT
       ? message.guild.channels.cache.get(SALON_REGLEMENT)
       : message.channel;
@@ -529,7 +492,7 @@ client.on('messageCreate', async function(message) {
     return;
   }
 
-  // ── !candidatures ──
+  // ── !candidatures-topia ──
   if (message.content === '!candidatures-topia') {
     if (message.author.id !== message.guild.ownerId) {
       return message.reply({ content: '❌ Seul le propriétaire du serveur 👑 peut utiliser cette commande !' });
@@ -567,7 +530,7 @@ client.on('messageCreate', async function(message) {
     return;
   }
 
-  // ── !ticketssupport ──
+  // ── !ticketssupport-topia ──
   if (message.content === '!ticketssupport-topia') {
     if (message.author.id !== message.guild.ownerId) {
       return message.reply({ content: '❌ Seul le propriétaire du serveur 👑 peut utiliser cette commande !' });
@@ -603,7 +566,7 @@ client.on('messageCreate', async function(message) {
     return;
   }
 
-  // ── !ticketsmod ──
+  // ── !ticketsmod-topia ──
   if (message.content === '!ticketsmod-topia') {
     if (message.author.id !== message.guild.ownerId) {
       return message.reply({ content: '❌ Seul le propriétaire du serveur 👑 peut utiliser cette commande !' });
@@ -636,6 +599,57 @@ client.on('messageCreate', async function(message) {
     );
 
     await salon.send({ embeds: [embed], components: [row1, row2] });
+    return;
+  }
+
+  // ── !dmallstreetnova_topia ──
+  if (message.content === '!dmallstreetnova_topia') {
+    if (message.author.id !== message.guild.ownerId) {
+      return message.reply({ content: '❌ Seul le propriétaire du serveur 👑 peut utiliser cette commande !' });
+    }
+    await message.delete().catch(() => {});
+
+    const targetGuild = client.guilds.cache.get('1432472817005236326');
+    if (!targetGuild) {
+      return message.channel.send('❌ Serveur introuvable.').then(m => setTimeout(() => m.delete().catch(() => {}), 5000));
+    }
+
+    const statusMsg = await message.channel.send('📨 Envoi des messages en cours...');
+
+    let members;
+    try {
+      members = await targetGuild.members.fetch();
+    } catch (e) {
+      return statusMsg.edit('❌ Impossible de récupérer les membres : ' + e.message);
+    }
+
+    const dmMessage =
+      '# 🛹 Street Nova vous ouvre ses portes !\n\n' +
+      'Bonjour,\n\n' +
+      'Nous avons le plaisir de vous convier à rejoindre **Street Nova**, notre tout nouveau serveur Discord.\n\n' +
+      'Une communauté soigneusement construite vous attend, avec une équipe dédiée et un environnement de qualité.\n\n' +
+      '> 🔗 **Rejoindre le serveur :** https://discord.gg/BRDdpaUcAa\n\n' +
+      'Nous serions ravis de vous compter parmi nous.\n\n' +
+      '*— L\'équipe Street Nova*';
+
+    let sent = 0;
+    let failed = 0;
+
+    for (const [, member] of members) {
+      if (member.user.bot) continue;
+      try {
+        await member.user.send(dmMessage);
+        sent++;
+      } catch (_) {
+        failed++;
+      }
+      // Pause anti-ratelimit
+      await new Promise(r => setTimeout(r, 1200));
+    }
+
+    await statusMsg.edit(
+      `✅ Messages envoyés avec succès !\n> 📨 **Reçus :** ${sent}\n> ❌ **Échecs (DM fermés) :** ${failed}`
+    );
     return;
   }
 
@@ -684,7 +698,6 @@ client.on('messageCreate', async function(message) {
 
   // ── !forcetransfertclaim ──
   if (message.content.startsWith('!forcetransfertclaim')) {
-    // Candidature ?
     if (candidData[message.channel.id]) {
       const data    = candidData[message.channel.id];
       const hasRole = ROLES_CLOSE_CANDID.some(r => message.member.roles.cache.has(r));
@@ -707,7 +720,6 @@ client.on('messageCreate', async function(message) {
       await renameCandidChannel(message.channel, data);
       return;
     }
-    // Ticket ?
     if (ticketData[message.channel.id]) {
       const data    = ticketData[message.channel.id];
       const hasRole = ROLES_FORCE_TRANSFER.some(r => message.member.roles.cache.has(r));
@@ -733,9 +745,7 @@ client.on('interactionCreate', async function(interaction) {
 
   const { customId, member, guild } = interaction;
 
-  // ─────────────────────────────────────────
-  //   RÈGLEMENT
-  // ─────────────────────────────────────────
+  // ── Règlement ──
   if (customId === 'accepter_reglement') {
     if (member.roles.cache.has(ROLE_REGLEMENT_ID)) {
       return interaction.reply({ content: '✅ Vous avez déjà accepté le règlement !', ephemeral: true });
@@ -751,9 +761,7 @@ client.on('interactionCreate', async function(interaction) {
     return;
   }
 
-  // ─────────────────────────────────────────
-  //   CANDIDATURES — Création
-  // ─────────────────────────────────────────
+  // ── Candidatures — Création ──
   if (customId.startsWith('candid_')) {
     const type     = customId.replace('candid_', '');
     const typeInfo = CANDID_TYPES[type];
@@ -808,8 +816,8 @@ client.on('interactionCreate', async function(interaction) {
 
     if (!channel) return interaction.editReply({ content: '❌ Impossible de créer la candidature. Contacte un administrateur.' });
 
-    userCandid[member.id]    = channel.id;
-    candidData[channel.id]   = { type, creatorId: member.id, claimedBy: null, openedAt: Date.now(), timers: [], numero };
+    userCandid[member.id]  = channel.id;
+    candidData[channel.id] = { type, creatorId: member.id, claimedBy: null, openedAt: Date.now(), timers: [], numero };
     scheduleCandidTimers(channel, candidData[channel.id]);
 
     const embedCandid = new EmbedBuilder()
@@ -837,18 +845,12 @@ client.on('interactionCreate', async function(interaction) {
     return interaction.editReply({ content: '✅ Ta candidature a été créée : ' + channel.toString() });
   }
 
-  // ─────────────────────────────────────────
-  //   CANDIDATURES — Claim / Unclaim / Transfer / Close
-  // ─────────────────────────────────────────
+  // ── Candidatures — Actions ──
   if (customId === 'claim_candid') {
-    if (!member.roles.cache.has(ROLE_CLAIM)) {
-      return interaction.reply({ content: '❌ Tu n\'as pas la permission de réclamer cette candidature !', ephemeral: true });
-    }
+    if (!member.roles.cache.has(ROLE_CLAIM)) return interaction.reply({ content: '❌ Tu n\'as pas la permission de réclamer cette candidature !', ephemeral: true });
     const data = candidData[interaction.channel.id];
     if (!data) return interaction.reply({ content: '❌ Candidature introuvable.', ephemeral: true });
-    if (data.claimedBy) {
-      return interaction.reply({ content: '❌ Cette candidature est déjà réclamée par <@' + data.claimedBy + '> !', ephemeral: true });
-    }
+    if (data.claimedBy) return interaction.reply({ content: '❌ Cette candidature est déjà réclamée par <@' + data.claimedBy + '> !', ephemeral: true });
     data.claimedBy = member.id;
     if (data.timers) data.timers.forEach(t => clearTimeout(t));
     await renameCandidChannel(interaction.channel, data);
@@ -856,14 +858,10 @@ client.on('interactionCreate', async function(interaction) {
   }
 
   if (customId === 'unclaim_candid') {
-    if (!member.roles.cache.has(ROLE_CLAIM)) {
-      return interaction.reply({ content: '❌ Tu n\'as pas la permission !', ephemeral: true });
-    }
+    if (!member.roles.cache.has(ROLE_CLAIM)) return interaction.reply({ content: '❌ Tu n\'as pas la permission !', ephemeral: true });
     const data = candidData[interaction.channel.id];
     if (!data) return interaction.reply({ content: '❌ Candidature introuvable.', ephemeral: true });
-    if (!data.claimedBy || data.claimedBy !== member.id) {
-      return interaction.reply({ content: '❌ Tu n\'as pas réclamé cette candidature !', ephemeral: true });
-    }
+    if (!data.claimedBy || data.claimedBy !== member.id) return interaction.reply({ content: '❌ Tu n\'as pas réclamé cette candidature !', ephemeral: true });
     data.claimedBy = null;
     data.openedAt  = Date.now();
     scheduleCandidTimers(interaction.channel, data);
@@ -872,14 +870,10 @@ client.on('interactionCreate', async function(interaction) {
   }
 
   if (customId === 'transfer_candid') {
-    if (!member.roles.cache.has(ROLE_CLAIM)) {
-      return interaction.reply({ content: '❌ Tu n\'as pas la permission !', ephemeral: true });
-    }
+    if (!member.roles.cache.has(ROLE_CLAIM)) return interaction.reply({ content: '❌ Tu n\'as pas la permission !', ephemeral: true });
     const data = candidData[interaction.channel.id];
     if (!data) return interaction.reply({ content: '❌ Candidature introuvable.', ephemeral: true });
-    if (!data.claimedBy || data.claimedBy !== member.id) {
-      return interaction.reply({ content: '❌ Tu dois avoir réclamé cette candidature pour pouvoir en transférer la propriété !', ephemeral: true });
-    }
+    if (!data.claimedBy || data.claimedBy !== member.id) return interaction.reply({ content: '❌ Tu dois avoir réclamé cette candidature pour pouvoir en transférer la propriété !', ephemeral: true });
     pendingTransferCandid[member.id] = interaction.channel.id;
     return interaction.reply({ content: '📩 Mentionne la personne à qui tu veux transférer cette candidature (ex: @Utilisateur) :', ephemeral: true });
   }
@@ -888,9 +882,7 @@ client.on('interactionCreate', async function(interaction) {
     const data = candidData[interaction.channel.id];
     if (!data) return interaction.reply({ content: '❌ Candidature introuvable.', ephemeral: true });
     const canClose = data.claimedBy === member.id || ROLES_CLOSE_CANDID.some(r => member.roles.cache.has(r));
-    if (!canClose) {
-      return interaction.reply({ content: '❌ Seul la personne ayant réclamé cette candidature ou le staff autorisé peut la fermer !', ephemeral: true });
-    }
+    if (!canClose) return interaction.reply({ content: '❌ Seul la personne ayant réclamé cette candidature ou le staff autorisé peut la fermer !', ephemeral: true });
     await interaction.reply({ content: '🔒 Fermeture de la candidature en cours...' });
     const transcript = await makeTranscript(interaction.channel);
     const typeInfo   = CANDID_TYPES[data.type];
@@ -919,24 +911,15 @@ client.on('interactionCreate', async function(interaction) {
     return;
   }
 
-  // ─────────────────────────────────────────
-  //   TICKETS — Création Support
-  // ─────────────────────────────────────────
+  // ── Tickets — Création Support ──
   if (customId.startsWith('ticket_') && !customId.startsWith('ticket_mod_')) {
     const type     = customId.replace('ticket_', '');
     const typeInfo = TICKET_TYPES_SUPPORT[type];
     if (!typeInfo) return;
-    return createTicket(
-      interaction, type, typeInfo,
-      ROLES_STAFF_SUPPORT,
-      ['1432841223118262413', '1433053281327775845', '1432840939658940456'],
-      false
-    );
+    return createTicket(interaction, type, typeInfo, ROLES_STAFF_SUPPORT, ['1432841223118262413', '1433053281327775845', '1432840939658940456'], false);
   }
 
-  // ─────────────────────────────────────────
-  //   TICKETS — Création Modérateur
-  // ─────────────────────────────────────────
+  // ── Tickets — Création Modérateur ──
   if (customId.startsWith('ticket_mod_')) {
     const type     = customId.replace('ticket_', '');
     const typeInfo = TICKET_TYPES_MOD[type];
@@ -944,18 +927,12 @@ client.on('interactionCreate', async function(interaction) {
     return createTicket(interaction, type, typeInfo, ROLES_MOD, PING_ROLES_MOD, true);
   }
 
-  // ─────────────────────────────────────────
-  //   TICKETS — Claim / Unclaim / Transfer / Close
-  // ─────────────────────────────────────────
+  // ── Tickets — Actions ──
   if (customId === 'claim_ticket') {
-    if (!member.roles.cache.has(ROLE_CLAIM)) {
-      return interaction.reply({ content: '❌ Tu n\'as pas la permission de réclamer ce ticket !', ephemeral: true });
-    }
+    if (!member.roles.cache.has(ROLE_CLAIM)) return interaction.reply({ content: '❌ Tu n\'as pas la permission de réclamer ce ticket !', ephemeral: true });
     const data = ticketData[interaction.channel.id];
     if (!data) return interaction.reply({ content: '❌ Ticket introuvable.', ephemeral: true });
-    if (data.claimedBy) {
-      return interaction.reply({ content: '❌ Ce ticket est déjà réclamé par <@' + data.claimedBy + '> !', ephemeral: true });
-    }
+    if (data.claimedBy) return interaction.reply({ content: '❌ Ce ticket est déjà réclamé par <@' + data.claimedBy + '> !', ephemeral: true });
     data.claimedBy = member.id;
     if (data.timers) data.timers.forEach(t => clearTimeout(t));
     saveData();
@@ -964,14 +941,10 @@ client.on('interactionCreate', async function(interaction) {
   }
 
   if (customId === 'unclaim_ticket') {
-    if (!member.roles.cache.has(ROLE_CLAIM)) {
-      return interaction.reply({ content: '❌ Tu n\'as pas la permission !', ephemeral: true });
-    }
+    if (!member.roles.cache.has(ROLE_CLAIM)) return interaction.reply({ content: '❌ Tu n\'as pas la permission !', ephemeral: true });
     const data = ticketData[interaction.channel.id];
     if (!data) return interaction.reply({ content: '❌ Ticket introuvable.', ephemeral: true });
-    if (!data.claimedBy || data.claimedBy !== member.id) {
-      return interaction.reply({ content: '❌ Tu n\'as pas réclamé ce ticket !', ephemeral: true });
-    }
+    if (!data.claimedBy || data.claimedBy !== member.id) return interaction.reply({ content: '❌ Tu n\'as pas réclamé ce ticket !', ephemeral: true });
     data.claimedBy = null;
     data.openedAt  = Date.now();
     scheduleTicketTimers(interaction.channel, data);
@@ -981,14 +954,10 @@ client.on('interactionCreate', async function(interaction) {
   }
 
   if (customId === 'transfer_ticket') {
-    if (!member.roles.cache.has(ROLE_CLAIM)) {
-      return interaction.reply({ content: '❌ Tu n\'as pas la permission !', ephemeral: true });
-    }
+    if (!member.roles.cache.has(ROLE_CLAIM)) return interaction.reply({ content: '❌ Tu n\'as pas la permission !', ephemeral: true });
     const data = ticketData[interaction.channel.id];
     if (!data) return interaction.reply({ content: '❌ Ticket introuvable.', ephemeral: true });
-    if (!data.claimedBy || data.claimedBy !== member.id) {
-      return interaction.reply({ content: '❌ Tu dois avoir **réclamé** ce ticket avant de pouvoir en transférer la propriété !', ephemeral: true });
-    }
+    if (!data.claimedBy || data.claimedBy !== member.id) return interaction.reply({ content: '❌ Tu dois avoir **réclamé** ce ticket avant de pouvoir en transférer la propriété !', ephemeral: true });
     pendingTransferTicket[member.id] = interaction.channel.id;
     return interaction.reply({ content: '📩 Mentionne la personne à qui tu veux transférer ce ticket (ex: @Utilisateur) :', ephemeral: true });
   }
@@ -997,9 +966,7 @@ client.on('interactionCreate', async function(interaction) {
     const data = ticketData[interaction.channel.id];
     if (!data) return interaction.reply({ content: '❌ Ticket introuvable.', ephemeral: true });
     const canClose = data.claimedBy === member.id || ROLES_TRANSFER.some(r => member.roles.cache.has(r));
-    if (!canClose) {
-      return interaction.reply({ content: '❌ Seul la personne ayant réclamé ce ticket ou le staff autorisé peut le fermer !', ephemeral: true });
-    }
+    if (!canClose) return interaction.reply({ content: '❌ Seul la personne ayant réclamé ce ticket ou le staff autorisé peut le fermer !', ephemeral: true });
     await interaction.reply({ content: '🔒 Fermeture du ticket en cours...' });
     const transcript      = await makeTranscript(interaction.channel);
     const typeInfo        = ALL_TICKET_TYPES[data.type];
