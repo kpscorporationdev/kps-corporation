@@ -541,8 +541,7 @@ module.exports = function(client) {
           '🎫 **Autre Aide**'
         )
         .setColor(0x2ECC71)
-        .setFooter({ text: 'Street Nova — Support • Un ticket par categorie' })
-        .setTimestamp();
+        .setFooter({ text: 'Street Nova — Support' });
       await message.channel.send({
         embeds    : [embed],
         components: [new ActionRowBuilder().addComponents(
@@ -572,8 +571,7 @@ module.exports = function(client) {
           '🎫 **Autre Aide**'
         )
         .setColor(0x4FC3F7)
-        .setFooter({ text: 'Street Nova — Moderation • Un ticket par categorie' })
-        .setTimestamp();
+        .setFooter({ text: 'Street Nova — Moderation' });
       await message.channel.send({
         embeds    : [embed],
         components: [new ActionRowBuilder().addComponents(
