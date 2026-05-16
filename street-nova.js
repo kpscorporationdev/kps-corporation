@@ -181,6 +181,7 @@ function getCandidConfig(typeKey) {
 const ticketCounters  = loadCounters();
 const openTickets     = new Map();
 const userOpenTickets = new Map();
+let   candidLocked    = false; // !lock_candidticket / !unlock_candidticket
 
 // ══════════════════════════════════════════════════════════════════════
 //   UTILITAIRE WEBHOOK
@@ -594,7 +595,7 @@ module.exports = function(client) {
           '🚨 **Aide Signalement**\n' +
           '🎫 **Autre Aide**'
         )
-        .setColor(0x2ECC71)
+        .setColor(0x7C3AED)
         .setFooter({ text: 'Street Nova — Support' });
       await message.channel.send({
         embeds    : [embed],
@@ -624,7 +625,7 @@ module.exports = function(client) {
           '🛡️ **Signalement Staff**\n' +
           '🎫 **Autre Aide**'
         )
-        .setColor(0x4FC3F7)
+        .setColor(0x7C3AED)
         .setFooter({ text: 'Street Nova — Moderation' });
       await message.channel.send({
         embeds    : [embed],
@@ -639,6 +640,24 @@ module.exports = function(client) {
       console.log('✅ [TICKETS/MODO] Panel moderation poste.');
       return;
     }
+    // ── Lock / Unlock candidatures ──
+    if (message.author.id === '913682240465170432') {
+      if (message.content === '!lock_candidticket') {
+        await message.delete().catch(() => {});
+        candidLocked = true;
+        await message.channel.send('🔒 Les candidatures ont été **fermées** par <@913682240465170432>.').catch(() => {});
+        console.log('✅ [CANDID] Candidatures verrouillées.');
+        return;
+      }
+      if (message.content === '!unlock_candidticket') {
+        await message.delete().catch(() => {});
+        candidLocked = false;
+        await message.channel.send('🔓 Les candidatures ont été **ouvertes** par <@913682240465170432>.').catch(() => {});
+        console.log('✅ [CANDID] Candidatures déverrouillées.');
+        return;
+      }
+    }
+
     // ── Panel Candidatures ──
     if (message.content === '!candid_streetnova') {
       await message.delete().catch(() => {});
@@ -653,7 +672,7 @@ module.exports = function(client) {
           '🛡️ **Devenir Moderateur**\n' +
           '🎧 **Devenir Support**'
         )
-        .setColor(0xF5A623)
+        .setColor(0x7C3AED)
         .setFooter({ text: 'Street Nova — Candidatures' });
       await message.channel.send({
         embeds    : [embed],
@@ -796,6 +815,12 @@ module.exports = function(client) {
     // ── Ouverture Candidatures ──
     const candidOpenMap = { 'tc_open_c_dev': 'c_dev', 'tc_open_c_testeur': 'c_testeur', 'tc_open_c_vidéaste': 'c_vidéaste', 'tc_open_c_modo': 'c_modo', 'tc_open_c_support': 'c_support' };
     if (candidOpenMap[customId]) {
+      if (candidLocked) {
+        return interaction.reply({
+          content  : '🔒 Les candidatures sont actuellement **fermées**. Revenez plus tard !',
+          ephemeral: true,
+        });
+      }
       const typeKey     = candidOpenMap[customId];
       const userTickets = userOpenTickets.get(member.id) ?? new Set();
       if (userTickets.has(typeKey)) {
