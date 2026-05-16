@@ -133,22 +133,42 @@ const CANDID_CATEGORIES = {
   c_support : { id: '1505117206562996325', name: '🎧 Devenir Support',     prefix: 'candid-support',     logChannel: '1505117454169276486' },
 };
 
-const CANDID_STAFF_ROLES = [
+// Roles de base communs a toutes les candidatures
+const CANDID_STAFF_ROLES_BASE = [
   '1495444713136984215',
   '1495035067767066764',
   '1487792404886065172',
   '1504372115305005176',
 ];
 
-const CANDID_PING_ROLES = [
+const CANDID_PING_ROLES_BASE = [
   '1487792404886065172',
   '1504372115305005176',
 ];
 
-const CANDID_ADMIN_ROLES = [
+const CANDID_ADMIN_ROLES_BASE = [
   '1487792404886065172',
   '1504372115305005176',
 ];
+
+// Roles specifiques par type de candidature (acces + admin exclusif)
+const CANDID_EXTRA = {
+  c_custom  : { role: '1505125084338196551' }, // Admin + acces Customiseur uniquement
+  c_modo    : { role: '1504369783393488966' }, // Admin + acces Modo uniquement
+  c_support : { role: '1504369719929606175' }, // Admin + acces Support uniquement
+};
+
+// Retourne la config complete (staff, ping, admin) pour un typeKey candid
+function getCandidConfig(typeKey) {
+  const extra = CANDID_EXTRA[typeKey]?.role;
+  return {
+    categories : CANDID_CATEGORIES,
+    staffRoles : extra ? [...CANDID_STAFF_ROLES_BASE, extra] : CANDID_STAFF_ROLES_BASE,
+    pingRoles  : extra ? [...CANDID_PING_ROLES_BASE, extra]  : CANDID_PING_ROLES_BASE,
+    adminRoles : extra ? [...CANDID_ADMIN_ROLES_BASE, extra] : CANDID_ADMIN_ROLES_BASE,
+    system     : 'candid',
+  };
+}
 
 // ══════════════════════════════════════════════════════════════════════
 //   ETAT GLOBAL
@@ -246,18 +266,22 @@ async function sendTranscript(guild, channel, ticketData) {
   const fileName = `transcript-${channel.name}.html`;
   const buf      = Buffer.from(html, 'utf-8');
 
+  const isCandid = ticketData.system === 'candid';
+  const logTitle = isCandid ? 'Candidature Fermee - Transcript' : 'Ticket Ferme - Transcript';
+  const dmTitle  = isCandid ? 'Votre candidature a ete fermee' : 'Votre ticket a ete ferme';
+  const logDesc  = isCandid
+    ? `**Salon :** #${channel.name}\n**Type :** ${ticketData.type.name}\n**Candidat :** <@${ticketData.ownerId}> (${ticketData.ownerTag})\n**Fermee le :** ${new Date().toLocaleString('fr-FR')}`
+    : `**Salon :** #${channel.name}\n**Systeme :** ${ticketData.system}\n**Type :** ${ticketData.type.name}\n**Cree par :** <@${ticketData.ownerId}> (${ticketData.ownerTag})\n**Ferme le :** ${new Date().toLocaleString('fr-FR')}`;
+  const dmDesc = isCandid
+    ? `Votre candidature **${ticketData.type.name}** sur **Street Nova** a ete fermee.\nVous trouverez ci-joint le transcript complet de vos echanges.`
+    : `Votre ticket **${ticketData.type.name}** sur **Street Nova** a ete ferme.\nVous trouverez ci-joint le transcript complet de vos echanges.`;
+
   const logChannel = guild.channels.cache.get(ticketData.type.logChannel);
   if (logChannel) {
     const logEmbed = new EmbedBuilder()
-      .setTitle('Ticket Ferme - Transcript')
-      .setDescription(
-        `**Salon :** #${channel.name}\n` +
-        `**Systeme :** ${ticketData.system}\n` +
-        `**Type :** ${ticketData.type.name}\n` +
-        `**Cree par :** <@${ticketData.ownerId}> (${ticketData.ownerTag})\n` +
-        `**Ferme le :** ${new Date().toLocaleString('fr-FR')}`
-      )
-      .setColor(0x7C3AED)
+      .setTitle(logTitle)
+      .setDescription(logDesc)
+      .setColor(isCandid ? 0xF5A623 : 0x7C3AED)
       .setTimestamp();
     await logChannel.send({ embeds: [logEmbed], files: [{ attachment: buf, name: fileName }] }).catch(() => {});
   }
@@ -265,12 +289,9 @@ async function sendTranscript(guild, channel, ticketData) {
   try {
     const owner = await guild.members.fetch(ticketData.ownerId);
     const dmEmbed = new EmbedBuilder()
-      .setTitle('Votre ticket a ete ferme')
-      .setDescription(
-        `Votre ticket **${ticketData.type.name}** sur **Street Nova** a ete ferme.\n` +
-        `Vous trouverez ci-joint le transcript complet de vos echanges.`
-      )
-      .setColor(0x7C3AED)
+      .setTitle(dmTitle)
+      .setDescription(dmDesc)
+      .setColor(isCandid ? 0xF5A623 : 0x7C3AED)
       .setTimestamp();
     await owner.user.send({ embeds: [dmEmbed], files: [{ attachment: Buffer.from(html, 'utf-8'), name: fileName }] }).catch(() => {});
   } catch (_) {}
@@ -737,7 +758,7 @@ module.exports = function(client) {
       }
       await interaction.deferReply({ ephemeral: true });
       try {
-        const config  = { categories: CANDID_CATEGORIES, staffRoles: CANDID_STAFF_ROLES, pingRoles: CANDID_PING_ROLES, adminRoles: CANDID_ADMIN_ROLES, system: 'candid' };
+        const config  = getCandidConfig(typeKey);
         const channel = await createTicket(guild, member, typeKey, config);
         userTickets.add(typeKey);
         userOpenTickets.set(member.id, userTickets);
